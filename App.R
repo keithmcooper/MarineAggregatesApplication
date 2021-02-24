@@ -201,10 +201,10 @@ ui <- dashboardPage(
                    
                    #__________________________________________________________________________________________
                    #### OTHER LOGOS ####
-                   HTML('&emsp;'),img(src="iceslogov3.png", width="77%"),#,height = 50, width =80
-                   #HTML('&emsp;'),img(src="postgreslogo.png",height = 50, width =50),
-                   #HTML('&emsp;'),img(src="rstudiologo.png",height = 50, width =50),
-                   #HTML('&emsp;'),img(src="rshinylogo.png",height = 50, width =50),
+                   #HTML('&emsp;'),img(src="iceslogov3.png", width="77%"),#,height = 50, width =80
+                   ##HTML('&emsp;'),img(src="postgreslogo.png",height = 50, width =50),
+                   ##HTML('&emsp;'),img(src="rstudiologo.png",height = 50, width =50),
+                   ##HTML('&emsp;'),img(src="rshinylogo.png",height = 50, width =50),
                    br()),
   
   
