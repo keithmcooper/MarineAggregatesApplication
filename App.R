@@ -36,25 +36,27 @@ rm(pw) # remove the password
 
 
 #### ####
-agg <-  st_read(con, query = "SELECT * FROM areas.emodnet_ha_aggregates_areas_20190621;")
-
+#agg <-  st_read(con, query = "SELECT * FROM areas.emodnet_ha_aggregates_areas_20190621;")
+agg <-  st_read(con, query = "SELECT * FROM areas.licence_polygon;")
 #View(agg)## Check class of objects
 class(agg)#[1] "sf"         "data.frame"
 
 ## Set CRS where necessary
 st_crs(agg) <- 4326
 
-UK <- agg[which(agg$country=="United Kingdom"),]
+UK <- agg[which(agg$country=="UK"),]
 France <- agg[which(agg$country=="France"),]
 Belgium <- agg[which(agg$country=="Belgium"),]
-Netherlands <- agg[which(agg$country=="The Netherlands"),]
+Netherlands <- agg[which(agg$country=="Netherlands"),]
 Denmark <- agg[which(agg$country=="Denmark"),]
 Germany <- agg[which(agg$country=="Germany"),]
 Poland <- agg[which(agg$country=="Poland"),]
 Finland <- agg[which(agg$country=="Finland"),]
-Italy <- agg[which(agg$country=="Italy"),]
-Russia <- agg[which(agg$country=="Russia"),]
-Lithuania <- agg[which(agg$country=="Lithuania "),]
+Sweden <- agg[which(agg$country=="Sweden"),]
+#Italy <- agg[which(agg$country=="Italy"),]
+#Russia <- agg[which(agg$country=="Russia"),]
+#Lithuania <- agg[which(agg$country=="Lithuania "),]
+Azores <- agg[which(agg$country=="Portugal (Azores)"),]
 #__________________________________________________________________________________________
 #### bring in some ems footprint data ####
 footuk2015 <- st_read("DATA/2015footprintlatlong.shp")
@@ -284,8 +286,8 @@ server <- function(input, output, session) {
     leaflet() %>%
       addProviderTiles(providers$Esri.WorldImagery)%>%
       
-      addPolygons(data=agg,color = "white", weight = 1, smoothFactor = 0.5,group = "agg",popup = paste0("<b>Name: </b>", agg$name, "<br>","<b>Country: </b>", agg$country))%>%
-      addPolygons(data=UK,color = "yellow", weight = 1, smoothFactor = 0.5,group = "UK",popup = paste0("<b>Name: </b>", UK$name))%>%
+      addPolygons(data=agg,color = "white", weight = 1, smoothFactor = 0.5,group = "agg",popup = paste0("<b>Country: </b>", agg$country,"<br>","<b>Name: </b>", agg$site_name,  "<br>","<b>Number: </b>", agg$site_numbe))%>%
+      addPolygons(data=UK,color = "yellow", weight = 1, smoothFactor = 0.5,group = "UK",popup = paste0("<b>Name: </b>", UK$site_name))%>%
       addPolygons(data=France,color = "yellow", weight = 1, smoothFactor = 0.5,group = "France",popup = paste0("<b>Name: </b>", France$name))%>%
       addPolygons(data=Belgium,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Belgium",popup = paste0("<b>Name: </b>", Belgium$name))%>%
       addPolygons(data=Netherlands,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Netherlands",popup = paste0("<b>Name: </b>", Netherlands$name))%>%
@@ -293,16 +295,18 @@ server <- function(input, output, session) {
       addPolygons(data=Germany,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Germany",popup = paste0("<b>Name: </b>", Germany$name))%>%
       addPolygons(data=Poland,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Poland",popup = paste0("<b>Name: </b>", Poland$name))%>%
       addPolygons(data=Finland,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Finland",popup = paste0("<b>Name: </b>", Finland$name))%>%
-      addPolygons(data=Italy,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Italy",popup = paste0("<b>Name: </b>", Italy$name))%>%
-      addPolygons(data=Russia,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Russia",popup = paste0("<b>Name: </b>", Russia$name))%>%
-      addPolygons(data=Lithuania,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Lithuania",popup = paste0("<b>Name: </b>", Lithuania$name))%>%
+      addPolygons(data=Azores,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Azores",popup = paste0("<b>Name: </b>", Azores$name))%>%
+      addPolygons(data=Sweden,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Sweden",popup = paste0("<b>Name: </b>", Sweden$name))%>%      
+      # addPolygons(data=Italy,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Italy",popup = paste0("<b>Name: </b>", Italy$name))%>%
+      #addPolygons(data=Russia,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Russia",popup = paste0("<b>Name: </b>", Russia$name))%>%
+      #addPolygons(data=Lithuania,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Lithuania",popup = paste0("<b>Name: </b>", Lithuania$name))%>%
       addPolygons(data=footuk2015,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2015)")%>%
       addPolygons(data=footuk2014,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2014)")%>%
       addPolygons(data=footuk2013,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2013)")%>%
       addPolygons(data=footuk2012,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2012)")%>%
       addPolygons(data=footuk2011,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2011)")%>%
       addPolygons(data=footuk2010,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2010)")%>%
-      addLayersControl(overlayGroups = c("Belgium","Denmark","Finland","France","Germany","Italy","Lithuania","Netherlands", "Poland","Russia","UK","EMS (2010)","EMS (2011)","EMS (2012)","EMS (2013)","EMS (2014)","EMS (2015)"),options = layersControlOptions(collapsed = FALSE))%>%hideGroup(c("Belgium","Denmark","Finland","France","Germany","Italy","Lithuania","Netherlands", "Poland","Russia","UK","EMS (2010)","EMS (2011)","EMS (2012)","EMS (2013)","EMS (2014)","EMS (2015)"))%>%
+      addLayersControl(overlayGroups = c("UK","France","Belgium","Netherlands","Denmark","Germany","Poland","Finland", "Finland","Azores","Sweden","EMS (2010)","EMS (2011)","EMS (2012)","EMS (2013)","EMS (2014)","EMS (2015)"),options = layersControlOptions(collapsed = FALSE))%>%hideGroup(c("Belgium","Denmark","Finland","France","Germany","Italy","Lithuania","Netherlands", "Poland","Russia","UK","EMS (2010)","EMS (2011)","EMS (2012)","EMS (2013)","EMS (2014)","EMS (2015)"))%>%
       setView(-20, 55.4, zoom = 3.4)
   })
   #__________________________________________________________________________________________
