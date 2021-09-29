@@ -14,6 +14,8 @@ library(DBI)
 library(sf)
 library(sp)
 library(scales)
+library(rgdal)
+library(zip)
 #__________________________________________________________________________________________
 #### MAKE CONNECTION TO THE INEBENTHIC DB ####
 
@@ -59,13 +61,17 @@ Sweden <- agg[which(agg$country=="Sweden"),]
 Azores <- agg[which(agg$country=="Portugal (Azores)"),]
 #__________________________________________________________________________________________
 #### bring in some ems footprint data ####
-footuk2015 <- st_read("DATA/2015footprintlatlong.shp")
-footuk2014 <- st_read("DATA/2014footprintlatlong.shp")
-footuk2013 <- st_read("DATA/2013footprintlatlong.shp")
-footuk2012 <- st_read("DATA/2012footprintlatlong.shp")
-footuk2011 <- st_read("DATA/2011footprintlatlong.shp")
-footuk2010 <- st_read("DATA/2010footprintlatlong.shp")
+#footuk2015 <- st_read("DATA/2015footprintlatlong.shp")
+#footuk2014 <- st_read("DATA/2014footprintlatlong.shp")
+#footuk2013 <- st_read("DATA/2013footprintlatlong.shp")
+#footuk2012 <- st_read("DATA/2012footprintlatlong.shp")
+#footuk2011 <- st_read("DATA/2011footprintlatlong.shp")
+#footuk2010 <- st_read("DATA/2010footprintlatlong.shp")
 #View(footuk2015)
+dredged_footprint <- st_read(con, query = "SELECT * FROM areas.dredged_polygon;")
+
+## Test to create a shapefile from 
+#st_write(dredged_footprint, dsn = "nc1.shp", layer = "nc.shp", driver = "ESRI Shapefile")
 #__________________________________________________________________________________________
 #### SELECT DATA ####
 #rm(pw) # remove the password
@@ -188,9 +194,19 @@ ui <- dashboardPage(
   
   #__________________________________________________________________________________________
   #### SIDEBAR ####
+  
   dashboardSidebar(selectInput(inputId="variableInput", multiple = T,h4("Select country",style="color:white"),choices = c("",as.character(unique(data$country_countryname)))),
                    #################
-                   selectInput(inputId="fillInput", multiple = F,h4("Select fill",style="color:white"),choices = c("aggcategory_type","conventionarea_areaname"),selected ="aggcategory_type"),
+                   selectInput(inputId="yearInput", multiple = T,h4("Select year",style="color:white"),choices = c(2020:1993)),#,selected =2020
+                   #selectInput(inputId="fillInput", multiple = F,h4("Select fill",style="color:white"),choices = c("aggcategory_type","conventionarea_areaname"),selected ="aggcategory_type"),
+                   br(),#br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+                   tags$style(
+                     ".main-sidebar {padding-left:10px;}"),
+                   h4("Map downloads (.shp)",style="color:white"),
+                   downloadButton('AreaLicensedExport', 'Licencesed Polygons'),br(),br(),
+                   downloadButton('AreaDredgedExport', 'Dredged Polygons'),
+                   br(),br(),br(),
+                   selectInput(inputId="fillInput", multiple = F,h4("Barplot fill (QUANTITY)",style="color:white"),choices = c("aggcategory_type","conventionarea_areaname"),selected ="aggcategory_type"),
                    ############
                    #h4("Map options:"),
                    #    selectInput(inputId="variableInput", multiple = F,h4("Select variable",style="color:white"),choices = c("",as.character(unique(long$variable)))),
@@ -281,32 +297,132 @@ ui <- dashboardPage(
 server <- function(input, output, session) {
   
   #__________________________________________________________________________________________
+  #__________________________________________________________________________________________ 
+  #### BASELINE DATA SUBSET ####
+  agg2 <- reactive({
+    # 1year,
+    #2 stationcode,
+    #3 surveyname,
+    #4 samplecode,
+    #5 samplelong,
+    #6 samplelat,
+    #7 wwacr,
+    #8 SUM(sv.percentage) 
+    #a <- subset( coord()[,c(4,5,6,7,11,12)],surveyname %in% input$baselineInput)
+    agg1 <- subset( agg,country %in% input$variableInput)
+    agg1.5 <- subset(agg1,year %in% input$yearInput)#
+    return(agg1.5)
+  })
+  #__________________________________________________________________________________________
+  ## DOWNLOAD SELECTED LICENCE POLYGONS AS SHAPEFILE
+  output$AreaLicensedExport <- downloadHandler(
+    filename <- function() {
+      "AreaLicensedExport.zip"
+      
+    },
+    content = function(file) {
+      withProgress(message = "Exporting Data", {
+        
+        incProgress(0.5)
+        tmp.path <- dirname(file)
+        
+        name.base <- file.path(tmp.path, "AreaLicensed")
+        name.glob <- paste0(name.base, ".*")
+        name.shp  <- paste0(name.base, ".shp")
+        name.zip  <- paste0(name.base, ".zip")
+        
+        if (length(Sys.glob(name.glob)) > 0) file.remove(Sys.glob(name.glob))
+        sf::st_write(agg2(), dsn = name.shp, ## layer = "shpExport",
+                     driver = "ESRI Shapefile", quiet = TRUE)
+        
+        zip::zipr(zipfile = name.zip, files = Sys.glob(name.glob))
+        req(file.copy(name.zip, file))
+        
+        if (length(Sys.glob(name.glob)) > 0) file.remove(Sys.glob(name.glob))
+        
+        incProgress(0.5)
+      })
+    }  
+  )
+  # st_write(dredged_footprint, dsn = "nc1.shp", layer = "nc.shp", driver = "ESRI Shapefile")
+  #__________________________________________________________________________________________  
+  #### BASELINE DATA SUBSET ####
+  dredged_footprint2 <- reactive({
+    # 1year,
+    #2 stationcode,
+    #3 surveyname,
+    #4 samplecode,
+    #5 samplelong,
+    #6 samplelat,
+    #7 wwacr,
+    #8 SUM(sv.percentage) 
+    #a <- subset( coord()[,c(4,5,6,7,11,12)],surveyname %in% input$baselineInput)
+    dredged_footprint1 <- subset( dredged_footprint,country_countryname %in% input$variableInput)
+    dredged_footprint1.5 <- subset(dredged_footprint1,year %in% input$yearInput)#
+    return(dredged_footprint1.5)
+  })
+  #__________________________________________________________________________________________
+  #__________________________________________________________________________________________
+  ## DOWNLOAD SELECTED DREDGED POLYGONS AS SHAPEFILE
+  output$AreaDredgedExport <- downloadHandler(
+    filename <- function() {
+      "AreaDredgedExport.zip"
+      
+    },
+    content = function(file) {
+      withProgress(message = "Exporting Data", {
+        
+        incProgress(0.5)
+        tmp.path <- dirname(file)
+        
+        name.base <- file.path(tmp.path, "AreaDredged")
+        name.glob <- paste0(name.base, ".*")
+        name.shp  <- paste0(name.base, ".shp")
+        name.zip  <- paste0(name.base, ".zip")
+        
+        if (length(Sys.glob(name.glob)) > 0) file.remove(Sys.glob(name.glob))
+        sf::st_write(dredged_footprint2(), dsn = name.shp, ## layer = "shpExport",
+                     driver = "ESRI Shapefile", quiet = TRUE)
+        
+        zip::zipr(zipfile = name.zip, files = Sys.glob(name.glob))
+        req(file.copy(name.zip, file))
+        
+        if (length(Sys.glob(name.glob)) > 0) file.remove(Sys.glob(name.glob))
+        
+        incProgress(0.5)
+      })
+    }  
+  )
+  # st_write(dredged_footprint, dsn = "nc1.shp", layer = "nc.shp", driver = "ESRI Shapefile")
+  #__________________________________________________________________________________________ 
   #### MAP ###
   output$map <- renderLeaflet({
     leaflet() %>%
       addProviderTiles(providers$Esri.WorldImagery)%>%
       
-      addPolygons(data=agg,color = "white", weight = 1, smoothFactor = 0.5,group = "agg",popup = paste0("<b>Country: </b>", agg$country,"<br>","<b>Name: </b>", agg$site_name,  "<br>","<b>Number: </b>", agg$site_numbe))%>%
-      addPolygons(data=UK,color = "yellow", weight = 1, smoothFactor = 0.5,group = "UK",popup = paste0("<b>Name: </b>", UK$site_name))%>%
-      addPolygons(data=France,color = "yellow", weight = 1, smoothFactor = 0.5,group = "France",popup = paste0("<b>Name: </b>", France$name))%>%
-      addPolygons(data=Belgium,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Belgium",popup = paste0("<b>Name: </b>", Belgium$name))%>%
-      addPolygons(data=Netherlands,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Netherlands",popup = paste0("<b>Name: </b>", Netherlands$name))%>%
-      addPolygons(data=Denmark,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Denmark",popup = paste0("<b>Name: </b>", Denmark$name))%>%
-      addPolygons(data=Germany,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Germany",popup = paste0("<b>Name: </b>", Germany$name))%>%
-      addPolygons(data=Poland,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Poland",popup = paste0("<b>Name: </b>", Poland$name))%>%
-      addPolygons(data=Finland,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Finland",popup = paste0("<b>Name: </b>", Finland$name))%>%
-      addPolygons(data=Azores,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Azores",popup = paste0("<b>Name: </b>", Azores$name))%>%
-      addPolygons(data=Sweden,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Sweden",popup = paste0("<b>Name: </b>", Sweden$name))%>%      
+      addPolygons(data=agg,color = "white", weight = 1, smoothFactor = 0.5,group = "All licensed areas",popup = paste0("<b>Country: </b>", agg$country,"<br>","<b>Name: </b>", agg$site_name,  "<br>","<b>Number: </b>", agg$site_numbe))%>%
+      addPolygons(data=agg2(),color = "yellow",fillColor = "yellow", fillOpacity = 0.5,weight = 1, smoothFactor = 0.5,opacity = 1,group = "Area Licensed",popup = paste0("<b>Country: </b>", agg2()$country,"<br>","<b>Name: </b>", agg2()$site_name,  "<br>","<b>Number: </b>", agg2()$site_numbe))%>%
+      addPolygons(data=dredged_footprint2(),color = "#4CBB17",fillColor = "#4CBB17", fillOpacity = 1,weight = 1, smoothFactor = 0.5,opacity = 1,group = "Area Dredged",popup = paste0("<b>Country: </b>", dredged_footprint2()$country_countryname,"<br>","<b>year: </b>", dredged_footprint2()$year))%>%
+      #addPolygons(data=France,color = "yellow", weight = 1, smoothFactor = 0.5,group = "France",popup = paste0("<b>Name: </b>", France$name))%>%
+      #addPolygons(data=Belgium,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Belgium",popup = paste0("<b>Name: </b>", Belgium$name))%>%
+      #addPolygons(data=Netherlands,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Netherlands",popup = paste0("<b>Name: </b>", Netherlands$name))%>%
+      #addPolygons(data=Denmark,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Denmark",popup = paste0("<b>Name: </b>", Denmark$name))%>%
+      #addPolygons(data=Germany,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Germany",popup = paste0("<b>Name: </b>", Germany$name))%>%
+      #addPolygons(data=Poland,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Poland",popup = paste0("<b>Name: </b>", Poland$name))%>%
+      #addPolygons(data=Finland,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Finland",popup = paste0("<b>Name: </b>", Finland$name))%>%
+      #addPolygons(data=Azores,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Azores",popup = paste0("<b>Name: </b>", Azores$name))%>%
+      #addPolygons(data=Sweden,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Sweden",popup = paste0("<b>Name: </b>", Sweden$name))%>%      
       # addPolygons(data=Italy,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Italy",popup = paste0("<b>Name: </b>", Italy$name))%>%
       #addPolygons(data=Russia,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Russia",popup = paste0("<b>Name: </b>", Russia$name))%>%
-      #addPolygons(data=Lithuania,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Lithuania",popup = paste0("<b>Name: </b>", Lithuania$name))%>%
-      addPolygons(data=footuk2015,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2015)")%>%
-      addPolygons(data=footuk2014,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2014)")%>%
-      addPolygons(data=footuk2013,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2013)")%>%
-      addPolygons(data=footuk2012,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2012)")%>%
-      addPolygons(data=footuk2011,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2011)")%>%
-      addPolygons(data=footuk2010,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2010)")%>%
-      addLayersControl(overlayGroups = c("UK","France","Belgium","Netherlands","Denmark","Germany","Poland","Finland", "Finland","Azores","Sweden","EMS (2010)","EMS (2011)","EMS (2012)","EMS (2013)","EMS (2014)","EMS (2015)"),options = layersControlOptions(collapsed = FALSE))%>%hideGroup(c("Belgium","Denmark","Finland","France","Germany","Italy","Lithuania","Netherlands", "Poland","Russia","UK","EMS (2010)","EMS (2011)","EMS (2012)","EMS (2013)","EMS (2014)","EMS (2015)"))%>%
+    #addPolygons(data=Lithuania,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Lithuania",popup = paste0("<b>Name: </b>", Lithuania$name))%>%
+    #addPolygons(data=footuk2015,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2015)")%>%
+    #addPolygons(data=footuk2014,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2014)")%>%
+    #addPolygons(data=footuk2013,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2013)")%>%
+    #addPolygons(data=footuk2012,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2012)")%>%
+    #addPolygons(data=footuk2011,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2011)")%>%
+    #addPolygons(data=footuk2010,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2010)")%>%
+    #addLayersControl(overlayGroups = c("UK","France","Belgium","Netherlands","Denmark","Germany","Poland","Finland", "Finland","Azores","Sweden","EMS (2010)","EMS (2011)","EMS (2012)","EMS (2013)","EMS (2014)","EMS (2015)"),options = layersControlOptions(collapsed = FALSE))%>%hideGroup(c("Belgium","Denmark","Finland","France","Germany","Italy","Lithuania","Netherlands", "Poland","Russia","UK","EMS (2010)","EMS (2011)","EMS (2012)","EMS (2013)","EMS (2014)","EMS (2015)"))%>%
+    addLayersControl(overlayGroups = c("Area Dredged"),options = layersControlOptions(collapsed = FALSE))%>%hideGroup(c("Area Dredged"))%>%
       setView(-20, 55.4, zoom = 3.4)
   })
   #__________________________________________________________________________________________
