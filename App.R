@@ -20,23 +20,40 @@ library(zip)
 #### MAKE CONNECTION TO THE INEBENTHIC DB ####
 
 
+#pw <- {
+#  "postgres1234"
+#}
+#logged= FALSE;
+
+## Loads PostgreSQL driver
+#drv <- dbDriver("Postgres")
+
+## Creates connection to the Postgres database. Note that "con" will be used later in each connection to the database
+#con =  dbConnect(drv, dbname = "wgext",
+#                 host = "localhost",
+#                 port = 5433,
+ #                user = "postgres",
+ #                password = pw)
+#rm(pw) # remove the password
+#_______________________________________________________________________________
+## Connect to copy of DB wgext on azsclnxgis-ext01.postgres.database.azure.com
 pw <- {
-  "postgres1234"
+  "0neBenth!c5374"
 }
 logged= FALSE;
 
 ## Loads PostgreSQL driver
 drv <- dbDriver("Postgres")
 
-## Creates connection to the Postgres database. Note that "con" will be used later in each connection to the database
-con =  dbConnect(drv, dbname = "wgext",
-                 host = "localhost",
-                 port = 5433,
-                 user = "postgres",
+con =  dbConnect(drv, dbname = "bu_wgext",
+                 host = "azsclnxgis-ext01.postgres.database.azure.com",
+                 port = 5432,
+                 user = "editors_one_benthic@azsclnxgis-ext01",
                  password = pw)
+
 rm(pw) # remove the password
-
-
+#_______________________________________________________________________________
+############################
 #### ####
 #agg <-  st_read(con, query = "SELECT * FROM areas.emodnet_ha_aggregates_areas_20190621;")
 agg <-  st_read(con, query = "SELECT * FROM areas.licence_polygon;")
@@ -190,7 +207,7 @@ colnames(dredgestatquantity4) <- c("Country","Year","Convention","Construction",
 ui <- dashboardPage(
   #__________________________________________________________________________________________
   #### HEADER ####  
-  dashboardHeader(title=tags$b("WGEXT Dredging Stats Dashboard "),titleWidth = 400),#title = "OneBenthic dashboard"
+  dashboardHeader(title=tags$b("Dredging Stats Dashboard "),titleWidth = 400),#title = "OneBenthic dashboard"
   
   #__________________________________________________________________________________________
   #### SIDEBAR ####
@@ -212,7 +229,8 @@ ui <- dashboardPage(
                    #    selectInput(inputId="variableInput", multiple = F,h4("Select variable",style="color:white"),choices = c("",as.character(unique(long$variable)))),
                    #                  selectInput(inputId="valueInput", multiple = F,h4("Select value",style="color:white"),choices =NULL)
                    
-                   br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+                   br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+                   h4("***ATTENTION***TEST VERSION DO NOT USE DATA"),
                    #__________________________________________________________________________________________
                    #### OB LOGO ####
                    #   HTML('&emsp;'), HTML('&emsp;'),img(src="OBLogo.png",height = 85, width =160),
