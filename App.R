@@ -214,7 +214,7 @@ ui <- dashboardPage(
   
   dashboardSidebar(selectInput(inputId="variableInput", multiple = T,h4("Select country",style="color:white"),choices = c("",as.character(unique(data$country_countryname)))),
                    #################
-                   selectInput(inputId="yearInput", multiple = T,h4("Select year",style="color:white"),choices = c(2020:1993)),#,selected =2020
+                   selectInput(inputId="yearInput", multiple = T,h4("Select year",style="color:white"),choices = c(2021:1993)),#,selected =2020
                    #selectInput(inputId="fillInput", multiple = F,h4("Select fill",style="color:white"),choices = c("aggcategory_type","conventionarea_areaname"),selected ="aggcategory_type"),
                    br(),#br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
                    tags$style(
