@@ -202,6 +202,27 @@ dredgestatquantity3 <- spread(dredgestatquantity2, aggcategory_type, volume)#fil
 dredgestatquantity4 <- dredgestatquantity3[,c(2,1,3,7,5,6,8,4,9)]
 colnames(dredgestatquantity4) <- c("Country","Year","Convention","Construction","Beach","Fill","Non-agg","Exp","Total")
 #__________________________________________________________________________________________
+#### Spatial data (licensed) ####
+
+spatial_licensed = dbGetQuery(con,"select distinct
+country,
+year
+from areas.licence_polygon
+order by country DESC, year ASC;")
+
+colnames(spatial_licensed) <- c("Country","Year")
+
+#__________________________________________________________________________________________
+#### Spatial data (dredged) ####
+
+spatial_dredged = dbGetQuery(con,"select distinct
+country_countryname as country,
+year
+from areas.dredged_polygon
+order by country DESC, year ASC;")
+
+colnames(spatial_dredged) <- c("Country","Year")
+#__________________________________________________________________________________________
 #### UI ####
 
 ui <- dashboardPage(
@@ -298,8 +319,10 @@ ui <- dashboardPage(
              tabPanel("All",width = NULL,plotOutput("licareaall")),
              tabPanel("Country",width = NULL,plotOutput("AreaCountry")),
              tabPanel("Detail",width = NULL,plotOutput("areacountryselect")),
-             tabPanel("AREA LICENSED (ALL2)",width = NULL,plotOutput("extbyyearjur"))
-             
+             tabPanel("AREA LICENSED (ALL2)",width = NULL,plotOutput("extbyyearjur")),
+            tabPanel("Spatial data (licensed)", div(DT::dataTableOutput("spat_lic"),style = 'font-size:85%')),
+            tabPanel("Spatial data (dredged)", div(DT::dataTableOutput("spat_dredged"),style = 'font-size:85%'))
+             #tabPanel("Spatial data (dredged)", width = NULL, plotOutput("extbyyearjur"))
              
              #)
       )
@@ -683,6 +706,21 @@ server <- function(input, output, session) {
   })
   #"Total","Construction","Beach","Fill","Non-agg","Exp",
   #__________________________________________________________
+  #### spatial (licensed) table ####
+  output$spat_lic <- renderDataTable({
+    DT::datatable(subset(spatial_licensed, Country %in%input$variableInput),options = list(pageLength = 8), rownames= FALSE)
+    
+    #DT::datatable(listapps2, options = list(pageLength = 14),escape=FALSE)
+    
+  })
+  #__________________________________________________________________________________________
+  #### spatial (licensed) table ####
+  output$spat_dredged <- renderDataTable({
+    DT::datatable(subset(spatial_dredged, Country %in%input$variableInput),options = list(pageLength = 8), rownames= FALSE)
+    
+    #DT::datatable(listapps2, options = list(pageLength = 14),escape=FALSE)
+    
+  })
   #________________________________  
   #### DOWNLOAD FAUNAL DATA FOR SELECTED SURVEY(S) ####  
   output$downloadData <- downloadHandler(
