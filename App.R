@@ -693,6 +693,7 @@ server <- function(input, output, session) {
       #facet_grid(year~.)
       facet_wrap(~country_countryname,ncol = 4)
   })
+  
   #__________________________________________________________________________________________  
   
   output$dredgestatquantity <- DT::renderDataTable({
