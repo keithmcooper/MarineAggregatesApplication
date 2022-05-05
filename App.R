@@ -96,7 +96,29 @@ data = dbGetQuery(con,
                   "SELECT * FROM amounts.amount where aggcategory_type = 'Construction/industrial' or
  aggcategory_type ='Beach replenishment' or 
 aggcategory_type ='Construction fill/land reclamation';")
+#__________________________________________________________________________________________
+#### Get EEZs ###
 
+eez <-  st_read(con, query = "SELECT * FROM categories.eez
+                where country = 'Belgium' 
+                or country = 'Netherlands'
+                or country = 'United Kingdom'
+                or country = 'Sweden'
+                or country = 'France'
+                or country = 'Portugal'
+                or country = 'Ireland'
+                or country = 'United States'
+                or country = 'Denmark'
+                or country = 'Latvia'
+                or country = 'Poland'
+                or country = 'Norway'
+                or country = 'Iceland'
+                or country = 'Spain'
+                or country = 'Canada'
+                or country = 'Germany'
+                or country = 'Finland'
+                or country = 'Estonia'
+                ;")
 
 
 
@@ -338,6 +360,24 @@ ui <- dashboardPage(
 server <- function(input, output, session) {
   
   #__________________________________________________________________________________________
+  
+  #__________________________________________________________________________________________ 
+  #### BASELINE DATA SUBSET ####
+  eez2 <- reactive({
+    # 1year,
+    #2 stationcode,
+    #3 surveyname,
+    #4 samplecode,
+    #5 samplelong,
+    #6 samplelat,
+    #7 wwacr,
+    #8 SUM(sv.percentage) 
+    #a <- subset( coord()[,c(4,5,6,7,11,12)],surveyname %in% input$baselineInput)
+    eez1 <- subset( eez,country %in% input$variableInput)
+    
+    return(eez1)
+  })
+  #__________________________________________________________________________________________
   #__________________________________________________________________________________________ 
   #### BASELINE DATA SUBSET ####
   agg2 <- reactive({
@@ -444,6 +484,7 @@ server <- function(input, output, session) {
       addPolygons(data=agg,color = "white", weight = 1, smoothFactor = 0.5,group = "All licensed areas",popup = paste0("<b>Country: </b>", agg$country,"<br>","<b>Name: </b>", agg$site_name,  "<br>","<b>Number: </b>", agg$site_numbe))%>%
       addPolygons(data=agg2(),color = "yellow",fillColor = "yellow", fillOpacity = 0.5,weight = 1, smoothFactor = 0.5,opacity = 1,group = "Area Licensed",popup = paste0("<b>Country: </b>", agg2()$country,"<br>","<b>Name: </b>", agg2()$site_name,  "<br>","<b>Number: </b>", agg2()$site_numbe))%>%
       addPolygons(data=dredged_footprint2(),color = "#4CBB17",fillColor = "#4CBB17", fillOpacity = 1,weight = 1, smoothFactor = 0.5,opacity = 1,group = "Area Dredged",popup = paste0("<b>Country: </b>", dredged_footprint2()$country_countryname,"<br>","<b>year: </b>", dredged_footprint2()$year))%>%
+      addPolygons(data=eez2(),color = "orange", weight = 0, smoothFactor = 0.5,fillOpacity = 0.3,group = "eez",popup = paste0("<b>EEZ: </b>", eez2()$country))%>%
       #addPolygons(data=France,color = "yellow", weight = 1, smoothFactor = 0.5,group = "France",popup = paste0("<b>Name: </b>", France$name))%>%
       #addPolygons(data=Belgium,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Belgium",popup = paste0("<b>Name: </b>", Belgium$name))%>%
       #addPolygons(data=Netherlands,color = "yellow", weight = 1, smoothFactor = 0.5,group = "Netherlands",popup = paste0("<b>Name: </b>", Netherlands$name))%>%
@@ -463,7 +504,7 @@ server <- function(input, output, session) {
     #addPolygons(data=footuk2011,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2011)")%>%
     #addPolygons(data=footuk2010,color = "green", weight = 1, smoothFactor = 0.5,group = "EMS (2010)")%>%
     #addLayersControl(overlayGroups = c("UK","France","Belgium","Netherlands","Denmark","Germany","Poland","Finland", "Finland","Azores","Sweden","EMS (2010)","EMS (2011)","EMS (2012)","EMS (2013)","EMS (2014)","EMS (2015)"),options = layersControlOptions(collapsed = FALSE))%>%hideGroup(c("Belgium","Denmark","Finland","France","Germany","Italy","Lithuania","Netherlands", "Poland","Russia","UK","EMS (2010)","EMS (2011)","EMS (2012)","EMS (2013)","EMS (2014)","EMS (2015)"))%>%
-    addLayersControl(overlayGroups = c("Area Dredged"),options = layersControlOptions(collapsed = FALSE))%>%hideGroup(c("Area Dredged"))%>%
+    addLayersControl(overlayGroups = c("Area Dredged","eez"),options = layersControlOptions(collapsed = FALSE))%>%hideGroup(c("Area Dredged","eez"))%>%
       setView(-20, 55.4, zoom = 3.4)
   })
   #__________________________________________________________________________________________
