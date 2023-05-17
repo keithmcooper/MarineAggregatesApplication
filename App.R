@@ -16,47 +16,25 @@ library(sp)
 library(scales)
 library(rgdal)
 library(zip)
+library(pool)
+
 #__________________________________________________________________________________________
-#### MAKE CONNECTION TO THE INEBENTHIC DB ####
+#### CREATE A CONNECTION TO DB wgext ####
+Sys.setenv(R_CONFIG_ACTIVE = "one_benthic")
+
+dw <- config::get()
+
+pool <- dbPool(drv = dbDriver(dw$driver),
+               dbname = dw$database,
+               host = dw$server,
+               port =  dw$port,
+               user = dw$uid,
+               password = dw$pwd)
+#__________________________________________________________________________________________
 
 
-#pw <- {
-#  "postgres1234"
-#}
-#logged= FALSE;
-
-## Loads PostgreSQL driver
-#drv <- dbDriver("Postgres")
-
-## Creates connection to the Postgres database. Note that "con" will be used later in each connection to the database
-#con =  dbConnect(drv, dbname = "wgext",
-#                 host = "localhost",
-#                 port = 5433,
- #                user = "postgres",
- #                password = pw)
-#rm(pw) # remove the password
-#_______________________________________________________________________________
-## Connect to copy of DB wgext on azsclnxgis-ext01.postgres.database.azure.com
-pw <- {
-  "0neBenth!c5374"
-}
-logged= FALSE;
-
-## Loads PostgreSQL driver
-drv <- dbDriver("Postgres")
-
-con =  dbConnect(drv, dbname = "bu_wgext",
-                 host = "azsclnxgis-ext01.postgres.database.azure.com",
-                 port = 5432,
-                 user = "editors_one_benthic@azsclnxgis-ext01",
-                 password = pw)
-
-rm(pw) # remove the password
-#_______________________________________________________________________________
-############################
-#### ####
 #agg <-  st_read(con, query = "SELECT * FROM areas.emodnet_ha_aggregates_areas_20190621;")
-agg <-  st_read(con, query = "SELECT * FROM areas.licence_polygon;")
+agg <-  st_read(pool, query = "SELECT * FROM areas.licence_polygon;")
 #View(agg)## Check class of objects
 class(agg)#[1] "sf"         "data.frame"
 
@@ -85,21 +63,21 @@ Azores <- agg[which(agg$country=="Portugal (Azores)"),]
 #footuk2011 <- st_read("DATA/2011footprintlatlong.shp")
 #footuk2010 <- st_read("DATA/2010footprintlatlong.shp")
 #View(footuk2015)
-dredged_footprint <- st_read(con, query = "SELECT * FROM areas.dredged_polygon;")
+dredged_footprint <- st_read(pool, query = "SELECT * FROM areas.dredged_polygon;")
 
 ## Test to create a shapefile from 
 #st_write(dredged_footprint, dsn = "nc1.shp", layer = "nc.shp", driver = "ESRI Shapefile")
 #__________________________________________________________________________________________
 #### SELECT DATA ####
 #rm(pw) # remove the password
-data = dbGetQuery(con,
+data = dbGetQuery(pool,
                   "SELECT * FROM amounts.amount where aggcategory_type = 'Construction/industrial' or
  aggcategory_type ='Beach replenishment' or 
 aggcategory_type ='Construction fill/land reclamation';")
 #__________________________________________________________________________________________
 #### Get EEZs ###
 
-eez <-  st_read(con, query = "SELECT * FROM categories.eez
+eez <-  st_read(pool, query = "SELECT * FROM categories.eez
                 where country = 'Belgium' 
                 or country = 'Netherlands'
                 or country = 'United Kingdom'
@@ -125,12 +103,12 @@ eez <-  st_read(con, query = "SELECT * FROM categories.eez
 #__________________________________________________________________________________________
 #### NUMBER OF RECORDS ####
 
-numberofsamples = dbGetQuery(con,"SELECT COUNT(*) FROM amounts.amount;")
+numberofsamples = dbGetQuery(pool,"SELECT COUNT(*) FROM amounts.amount;")
 numberofsamples <- as.numeric(as.character(numberofsamples$count))
 #__________________________________________________________________________________________
 #### LARGEST EXTRACTORS CUMULATIVE####
 
-datatotext = dbGetQuery(con,
+datatotext = dbGetQuery(pool,
                         "SELECT * FROM amounts.amount where aggcategory_type = 'Total extracted';")
 
 datatotext2 <- datatotext%>%group_by(country_countryname)%>%summarize(x=sum(volume))%>%arrange(desc(x))
@@ -140,7 +118,7 @@ datatotext2 <- datatotext%>%group_by(country_countryname)%>%summarize(x=sum(volu
 
 #### total extracted by year (all countries) fill by agg category####
 
-datatotextyr = dbGetQuery(con,
+datatotextyr = dbGetQuery(pool,
                           "SELECT * FROM amounts.amount where aggcategory_type = 'Construction/industrial' or
  aggcategory_type ='Beach replenishment' or 
 aggcategory_type ='Construction fill/land reclamation';")
@@ -152,7 +130,7 @@ datatotextyr2 <- datatotextyr%>%group_by(year,aggcategory_type,conventionarea_ar
 
 #__________________________________________________________________________________________
 #### cum plot#### 
-datacumplot = dbGetQuery(con,
+datacumplot = dbGetQuery(pool,
                          "SELECT * FROM amounts.amount where aggcategory_type = 'Construction/industrial' or
  aggcategory_type ='Beach replenishment' or 
                          aggcategory_type ='Construction fill/land reclamation';")
@@ -173,7 +151,7 @@ datacumplot5 <- datacumplot4%>%group_by(aggcategory_type,conventionarea_areaname
 
 #### total extracted by year (all countries) fill by jurisdiction####
 
-datatotextjur = dbGetQuery(con,
+datatotextjur = dbGetQuery(pool,
                            "SELECT * FROM amounts.amount where aggcategory_type = 'Construction/industrial' or
  aggcategory_type ='Beach replenishment' or 
 aggcategory_type ='Construction fill/land reclamation';")
@@ -189,13 +167,19 @@ datatotextjur3 <- datatotextjur2%>%group_by(year,conventionarea_areaname)%>%summ
 #__________________________________________________________________________________________
 #### NATIONAL AREAS DREDGED ####
 
-naddata = dbGetQuery(con,"select * from areas.licence;")
+naddata = dbGetQuery(pool,"select * from areas.licence;")
 head(naddata)
+
+############
+naddata <- naddata[,1:ncol(naddata)-1]
+
+###############
 ## add col for UndredgedArea
 naddata$totalareaundredged <- naddata$totalarealicensed-naddata$totalareadredged
 
 ## Get data into long format
-naddata2 <- naddata[,c(2,3,5,6,8)]
+#naddata2 <- naddata[,c(2,3,5,6,8)] error noted on 17/01/2023
+naddata2 <- naddata[,c(2,3,5,6,7)]
 head(naddata2)
 library(tidyr)
 
@@ -213,7 +197,7 @@ naddata_long3 <- naddata_long2[which(naddata_long2$category=="totalarealicensed"
 naddata_long4 <- naddata_long2[which(naddata_long2$category=="totalareadredged"),]
 #__________________________________________________________________________________________
 #### quantities data for download####
-dredgestatquantity = dbGetQuery(con,"select * from amounts.amount;")
+dredgestatquantity = dbGetQuery(pool,"select * from amounts.amount;")
 
 ## Drop id col
 dredgestatquantity2 <- dredgestatquantity[,2:6]
@@ -226,7 +210,7 @@ colnames(dredgestatquantity4) <- c("Country","Year","Convention","Construction",
 #__________________________________________________________________________________________
 #### Spatial data (licensed) ####
 
-spatial_licensed = dbGetQuery(con,"select distinct
+spatial_licensed = dbGetQuery(pool,"select distinct
 country,
 year
 from areas.licence_polygon
@@ -237,7 +221,7 @@ colnames(spatial_licensed) <- c("Country","Year")
 #__________________________________________________________________________________________
 #### Spatial data (dredged) ####
 
-spatial_dredged = dbGetQuery(con,"select distinct
+spatial_dredged = dbGetQuery(pool,"select distinct
 country_countryname as country,
 year
 from areas.dredged_polygon
