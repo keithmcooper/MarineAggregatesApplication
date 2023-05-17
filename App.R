@@ -30,6 +30,7 @@ pool <- dbPool(drv = dbDriver(dw$driver),
                port =  dw$port,
                user = dw$uid,
                password = dw$pwd)
+
 #__________________________________________________________________________________________
 
 
