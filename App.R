@@ -120,7 +120,7 @@ datatotext2 <- datatotext%>%group_by(country_countryname)%>%summarize(x=sum(volu
 #### total extracted by year (all countries) fill by agg category####
 
 datatotextyr = dbGetQuery(pool,
-                          "SELECT * FROM amounts.amount where aggcategory_type = 'Construction/industrial' or
+                          "SELECT id, year, country_countryname, conventionarea_areaname, aggcategory_type, volume FROM amounts.amount where aggcategory_type = 'Construction/industrial' or
  aggcategory_type ='Beach replenishment' or 
 aggcategory_type ='Construction fill/land reclamation';")
 ## remove na
