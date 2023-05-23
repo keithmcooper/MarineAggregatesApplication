@@ -278,6 +278,22 @@ ui <- dashboardPage(
   #img(src="logos_long.png",height = 300, width = 50)
   dashboardBody(
     # Boxes need to be put in a row (or column)
+    
+    
+    ##############
+    modalDialog(
+      h4("This app is being developed by the",tags$a(href="https://www.ices.dk/community/groups/pages/wgext.aspx","ICES WGEXT"),
+      " and is made available for use on an as is and as available basis. No warranty is given in relation to the accuracy of the
+      content or in respect of its use for any particular purpose. Note the app is still in development and it's contents are
+      incomplete (see",tags$a(href="https://sway.office.com/orIuJoHSruYfhy09?ref=Link","here")," for further information).
+Your access to and use of the content available on this app is entirely at your own risk. This work is licensed under",
+      tags$a(href="https://creativecommons.org/licenses/by/4.0/?ref=chooser-v1","CC BY 4.0"),"."),
+      title = h4("Disclaimer"),
+      size = "l",
+      easyClose = FALSE
+    ),
+    
+    ###############
     #__________________________________________________________________________________________
     #### INFO BOXES ####   
     #fluidRow(infoBoxOutput("purpose",width=12)),
