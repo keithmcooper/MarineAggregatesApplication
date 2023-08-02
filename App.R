@@ -151,8 +151,6 @@ datacumplot5 <- datacumplot4%>%group_by(aggcategory_type,conventionarea_areaname
 
 
 #__________________________________________________________________________________________
-
-
 #### total extracted by year (all countries) fill by jurisdiction####
 
 datatotextjur = dbGetQuery(pool,
@@ -233,6 +231,53 @@ order by country DESC, year ASC;")
 
 colnames(spatial_dredged) <- c("Country","Year")
 #__________________________________________________________________________________________
+#### Amounts data availability ####
+
+amounts_data_avail = dbGetQuery(pool,
+                  "SELECT
+DISTINCT 
+country_countryname as country,
+year
+FROM
+amounts.amount
+ORDER BY
+country asc,
+year asc;")
+
+colnames(amounts_data_avail) <- c("Country","Year")
+#__________________________________________________________________________________________
+#### Unique countries in Amounts table ####
+countries = dbGetQuery(pool,
+                                "SELECT
+DISTINCT 
+country_countryname as country
+FROM
+amounts.amount
+ORDER BY
+country asc;")
+
+vector_countries <- c(t(countries))
+#__________________________________________________________________________________________
+#### total area licensed (countries/years reported) ####
+tot_area_lic = dbGetQuery(pool,
+                       "SELECT DISTINCT 
+country_countryname as country,
+year
+FROM areas.licence
+WHERE totalarealicensed IS NOT NULL;")
+
+colnames(tot_area_lic) <- c("Country","Year")
+#__________________________________________________________________________________________
+#### total area footprint (countries/years reported) ####
+tot_area_dredged = dbGetQuery(pool,
+                          "SELECT DISTINCT 
+country_countryname as country,
+year
+FROM areas.licence
+WHERE totalareadredged IS NOT NULL;")
+
+colnames(tot_area_dredged) <- c("Country","Year")
+#__________________________________________________________________________________________
 #### UI ####
 
 ui <- dashboardPage(
@@ -262,15 +307,15 @@ ui <- dashboardPage(
                    #    selectInput(inputId="variableInput", multiple = F,h4("Select variable",style="color:white"),choices = c("",as.character(unique(long$variable)))),
                    #                  selectInput(inputId="valueInput", multiple = F,h4("Select value",style="color:white"),choices =NULL)
                    
-                   br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
-                   h4("***ATTENTION***TEST VERSION DO NOT USE DATA"),
+                   br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+                  # h4("***ATTENTION***TEST VERSION USE DATA WITH CAUTION"),
                    #__________________________________________________________________________________________
                    #### OB LOGO ####
                    #   HTML('&emsp;'), HTML('&emsp;'),img(src="OBLogo.png",height = 85, width =160),
                    
                    #__________________________________________________________________________________________
                    #### OTHER LOGOS ####
-                   #HTML('&emsp;'),img(src="iceslogov3.png", width="77%"),#,height = 50, width =80
+                   HTML('&emsp;'),img(src="iceslogov3.png", width="77%"),#,height = 50, width =80
                    ##HTML('&emsp;'),img(src="postgreslogo.png",height = 50, width =50),
                    ##HTML('&emsp;'),img(src="rstudiologo.png",height = 50, width =50),
                    ##HTML('&emsp;'),img(src="rshinylogo.png",height = 50, width =50),
@@ -331,7 +376,12 @@ Your access to and use of the content available on this app is entirely at your 
              tabPanel("Extracted",div(DT::dataTableOutput("totalcumext"),style = 'font-size:85%')),
              tabPanel("Cum",width = NULL,plotOutput("totalcum")),
              tabPanel("By country",width = NULL,plotOutput("amountcountryselect")),
-             
+             ####
+             tabPanel("Data Availbility",
+                      div(style = 'overflow-y:scroll;height:420px;',
+                      width = NULL,div(formattableOutput("amounts_data_avail"),style = 'font-size:58%'))),
+             #amounts_data_avail 
+             ###########
              tabPanel("All",width = NULL,plotOutput("yearplot")),
              
              tabPanel("Total",width = NULL,plotOutput("totextyrall"))
@@ -351,13 +401,20 @@ Your access to and use of the content available on this app is entirely at your 
             #tabPanel("Spatial data (licensed)", div(DT::dataTableOutput("spat_lic"),style = 'font-size:85%')),
             tabPanel("Spatial Data Availability",
             tabsetPanel(
-            tabPanel("Licensed Areas",
+            tabPanel("Licensed Areas (.shp)",
                      div(style = 'overflow-y:scroll;height:380px;',# add vertical scrollbar
-                     div(formattableOutput("spat_lic"),style = 'font-size:85%'))),
+                     div(formattableOutput("spat_lic"),style = 'font-size:58%'))),
+            
             #tabPanel("Dredged Footprints", div(DT::dataTableOutput("spat_dredged"),style = 'font-size:85%'))
-            tabPanel("Dredged Footprints",
+            tabPanel("Dredged Footprints (.shp)",
                      div(style = 'overflow-y:scroll;height:380px;',# add vertical scrollbar
-                         div(formattableOutput("spat_dredged"),style = 'font-size:85%')))
+                         div(formattableOutput("spat_dredged"),style = 'font-size:58%'))),
+            tabPanel("Total Area Licensed (km2)",
+                     div(style = 'overflow-y:scroll;height:380px;',# add vertical scrollbar
+                     div(formattableOutput("tot_area_lic"),style = 'font-size:58%') )),
+            tabPanel("Total Area Footprint (km2)",
+                     div(style = 'overflow-y:scroll;height:380px;',# add vertical scrollbar
+                         div(formattableOutput("tot_area_dredged"),style = 'font-size:58%') ))
             )
             )
              #tabPanel("Spatial data (dredged)", width = NULL, plotOutput("extbyyearjur"))
@@ -764,7 +821,7 @@ server <- function(input, output, session) {
   })
   #"Total","Construction","Beach","Fill","Non-agg","Exp",
   #__________________________________________________________
-  #### spatial (licensed) table ####
+  #### Spatial Data Availability: Licensed Areas (.shp) ####
  # output$spat_lic <- renderDataTable({
   #  DT::datatable(subset(spatial_licensed, Country %in%input$variableInput),options = list(pageLength = 8), rownames= FALSE)
   #   })
@@ -773,17 +830,29 @@ server <- function(input, output, session) {
   spatial_licensed$Country <- as.factor(spatial_licensed$Country) ## Ensure data in correct format
   spatial_licensed2 <- spatial_licensed[order(spatial_licensed$Year, decreasing = TRUE),] # Order data by year
   spatial_licensed_piv <- pivot_wider(spatial_licensed2, names_from = Country, values_from = value)# Convert data from long to wide format
+  
+  all_years = as.integer(c(lubridate::year(Sys.Date())-1):1993)# vector of all years to present
+  spatial_licensed_piv <-tidyr::complete(spatial_licensed_piv, Year = all_years, fill = list(Count = 0))# Add in missing years and add zeros
+  spatial_licensed_piv <-  spatial_licensed_piv[order(spatial_licensed_piv$Year, decreasing = TRUE),] # Order data by year
+  
   new_order = sort(colnames(spatial_licensed_piv[2:ncol(spatial_licensed_piv)]))# Sort columns (i.e. countries) in ascending alphabetical order
   spatial_licensed_piv2 <- spatial_licensed_piv[, new_order]# Sort columns (i.e. countries) in ascending alphabetical order
   spatial_licensed_piv3 <- cbind(spatial_licensed_piv$Year,spatial_licensed_piv2)# Sort columns (i.e. countries) in ascending alphabetical order
   colnames(spatial_licensed_piv3)[1] <- 'Year'
+  
+  missing <- setdiff(vector_countries, names(spatial_licensed_piv3))  # Find names of missing columns (i.e. countries that have submitted amounts)
+  spatial_licensed_piv3[missing] <- 0# Add them, filled with '0's
+  spatial_licensed_piv3 <- spatial_licensed_piv3[vector_countries]## Put columns in desired order
+  spatial_licensed_piv3 <- cbind(spatial_licensed_piv[,1],spatial_licensed_piv3)# bring in years column
+  spatial_licensed_piv3[spatial_licensed_piv3 == 0] <- NA #Replace on all columns
+  
   spatial_licensed_piv4 <- spatial_licensed_piv3 %>%janitor::adorn_totals("row")%>%janitor::adorn_totals("col")### Add row and col sums
   format <- formatter("span",style = x ~ style(color = ifelse(x, "green", "red")),x ~ icontext(ifelse(x, "ok", "remove")))# Specify format for tick symbols
-  output$spat_lic <- renderFormattable({formattable(spatial_licensed_piv4,align ="c",list(Normal = format,area(row = 1:nrow(spatial_licensed_piv4)-1, col = c(-1,-15)) ~ format))# Create table
+  output$spat_lic <- renderFormattable({formattable(spatial_licensed_piv4,align ="c",list(Normal = format,area(row = 1:nrow(spatial_licensed_piv4)-1, col = c(-1,-20)) ~ format))# Create table
   })
 
   #__________________________________________________________________________________________
-  #### spatial (dredged) table ####
+  #### Spatial Data Availability: Dredged Footprints (km2) ####
  # output$spat_dredged <- renderDataTable({
  #   DT::datatable(subset(spatial_dredged, Country %in%input$variableInput),options = list(pageLength = 8), rownames= FALSE)
   # })
@@ -791,15 +860,98 @@ server <- function(input, output, session) {
   spatial_dredged$Country <- as.factor(spatial_dredged$Country) ## Ensure data in correct format
   spatial_dredged2 <- spatial_dredged[order(spatial_dredged$Year, decreasing = TRUE),] # Order data by year
   spatial_dredged_piv <- pivot_wider(spatial_dredged2, names_from = Country, values_from = value)# Convert data from long to wide format
+  
+  all_years = as.integer(c(lubridate::year(Sys.Date())-1):1993)# vector of all years to present
+  spatial_dredged_piv <-tidyr::complete(spatial_dredged_piv, Year = all_years, fill = list(Count = 0))# Add in missing years and add zeros
+  spatial_dredged_piv <-  spatial_dredged_piv[order(spatial_dredged_piv$Year, decreasing = TRUE),] # Order data by year
+  
   new_order = sort(colnames(spatial_dredged_piv[2:ncol(spatial_dredged_piv)]))# Sort columns (i.e. countries) in ascending alphabetical order
   spatial_dredged_piv2 <- spatial_dredged_piv[, new_order]# Sort columns (i.e. countries) in ascending alphabetical order
   spatial_dredged_piv3 <- cbind(spatial_dredged_piv$Year,spatial_dredged_piv2)# Sort columns (i.e. countries) in ascending alphabetical order
   colnames(spatial_dredged_piv3)[1] <- 'Year'
+
+  missing <- setdiff(vector_countries, names(spatial_dredged_piv3))  # Find names of missing columns (i.e. countries that have submitted amounts)
+  spatial_dredged_piv3[missing] <- 0# Add them, filled with '0's
+  spatial_dredged_piv3 <- spatial_dredged_piv3[vector_countries]## Put columns in desired order
+  spatial_dredged_piv3 <- cbind(spatial_dredged_piv[,1],spatial_dredged_piv3)# bring in years column
+  spatial_dredged_piv3[spatial_dredged_piv3 == 0] <- NA #Replace on all columns
+  
   spatial_dredged_piv4 <- spatial_dredged_piv3 %>%janitor::adorn_totals("row")%>%janitor::adorn_totals("col")### Add row and col sums
   format <- formatter("span",style = x ~ style(color = ifelse(x, "green", "red")),x ~ icontext(ifelse(x, "ok", "remove")))# Specify format for tick symbols
-  output$spat_dredged <- renderFormattable({formattable(spatial_dredged_piv4,align ="c",list(Normal = format,area(row = 1:nrow(spatial_dredged_piv4)-1, col = c(-1,-4)) ~ format))# Create table
+  output$spat_dredged <- renderFormattable({formattable(spatial_dredged_piv4,align ="c",list(Normal = format,area(row = 1:nrow(spatial_dredged_piv4)-1, col = c(-1,-20)) ~ format))# Create table
   })
-  #________________________________  
+  #__________________________________________________________________________________________
+  #### Data Availability: Amounts ####
+  amounts_data_avail$value <- 1# Create a data value of 1 for each instance where licence data exist
+  amounts_data_avail$Country <- as.factor(amounts_data_avail$Country) ## Ensure data in correct format
+  amounts_data_avail2 <- amounts_data_avail[order(amounts_data_avail$Year, decreasing = TRUE),] # Order data by year
+  amounts_data_avail_piv <- pivot_wider(amounts_data_avail2, names_from = Country, values_from = value)# Convert data from long to wide format
+  
+  all_years = as.integer(c(lubridate::year(Sys.Date())-1):1993)# vector of all years to present
+  amounts_data_avail_piv <-tidyr::complete(amounts_data_avail_piv, Year = all_years, fill = list(Count = 0))# Add in missing years and add zeros
+  amounts_data_avail_piv <-  amounts_data_avail_piv[order( amounts_data_avail_piv$Year, decreasing = TRUE),] # Order data by year
+ 
+  new_order = sort(colnames(amounts_data_avail_piv[2:ncol(amounts_data_avail_piv)]))# Sort columns (i.e. countries) in ascending alphabetical order
+  amounts_data_avail_piv2 <- amounts_data_avail_piv[, new_order]# Sort columns (i.e. countries) in ascending alphabetical order
+  amounts_data_avail_piv3 <- cbind(amounts_data_avail_piv$Year,amounts_data_avail_piv2)# Sort columns (i.e. countries) in ascending alphabetical order
+  colnames(amounts_data_avail_piv3)[1] <- 'Year'
+  amounts_data_avail_piv4 <- amounts_data_avail_piv3 %>%janitor::adorn_totals("row")%>%janitor::adorn_totals("col")### Add row and col sums
+  format <- formatter("span",style = x ~ style(color = ifelse(x, "green", "red")),x ~ icontext(ifelse(x, "ok", "remove")))# Specify format for tick symbols
+  output$amounts_data_avail <- renderFormattable({formattable(amounts_data_avail_piv4,align ="c",list(Normal = format,area(row = 1:nrow(amounts_data_avail_piv4)-1, col = c(-1,-20)) ~ format))# Create table
+  })
+  #__________________________________________________________________________________________
+  #### Spatial Data Availability:Total Area Licensed (km2) ####
+  tot_area_lic$value <- 1# Create a data value of 1 for each instance where licence data exist
+  tot_area_lic$Country <- as.factor(tot_area_lic$Country) ## Ensure data in correct format
+  tot_area_lic2 <- tot_area_lic[order(tot_area_lic$Year, decreasing = TRUE),] # Order data by year
+  tot_area_lic_piv <- pivot_wider(tot_area_lic2, names_from = Country, values_from = value)# Convert data from long to wide format
+  
+  all_years = as.integer(c(lubridate::year(Sys.Date())-1):1993)# vector of all years to present
+  tot_area_lic_piv <-tidyr::complete(tot_area_lic_piv, Year = all_years, fill = list(Count = 0))# Add in missing years and add zeros
+  tot_area_lic_piv <-  tot_area_lic_piv[order(tot_area_lic_piv$Year, decreasing = TRUE),] # Order data by year
+  
+  new_order = sort(colnames(tot_area_lic_piv[2:ncol(tot_area_lic_piv)]))# Sort columns (i.e. countries) in ascending alphabetical order
+  tot_area_lic_piv2 <- tot_area_lic_piv[, new_order]# Sort columns (i.e. countries) in ascending alphabetical order
+  tot_area_lic_piv3 <- cbind(tot_area_lic_piv$Year,tot_area_lic_piv2)# Sort columns (i.e. countries) in ascending alphabetical order
+  colnames(tot_area_lic_piv3)[1] <- 'Year'
+  
+  missing <- setdiff(vector_countries, names(tot_area_lic_piv3))  # Find names of missing columns (i.e. countries that have submitted amounts)
+  tot_area_lic_piv3[missing] <- 0# Add them, filled with '0's
+  tot_area_lic_piv3 <- tot_area_lic_piv3[vector_countries]## Put columns in desired order
+  tot_area_lic_piv3 <- cbind(tot_area_lic_piv[,1],tot_area_lic_piv3)# bring in years column
+  tot_area_lic_piv3[tot_area_lic_piv3 == 0] <- NA #Replace on all columns
+  
+  tot_area_lic_piv4 <- tot_area_lic_piv3 %>%janitor::adorn_totals("row")%>%janitor::adorn_totals("col")### Add row and col sums
+  format <- formatter("span",style = x ~ style(color = ifelse(x, "green", "red")),x ~ icontext(ifelse(x, "ok", "remove")))# Specify format for tick symbols
+  output$tot_area_lic <- renderFormattable({formattable(tot_area_lic_piv4,align ="c",list(Normal = format,area(row = 1:nrow(tot_area_lic_piv4)-1, col = c(-1,-20)) ~ format))# Create table
+  })
+  #__________________________________________________________________________________________
+  #### Spatial Data Availability:Total Area Footprint (km2) ####
+  tot_area_dredged$value <- 1# Create a data value of 1 for each instance where licence data exist
+  tot_area_dredged$Country <- as.factor(tot_area_dredged$Country) ## Ensure data in correct format
+  tot_area_dredged2 <- tot_area_dredged[order(tot_area_dredged$Year, decreasing = TRUE),] # Order data by year
+  tot_area_dredged_piv <- pivot_wider(tot_area_dredged2, names_from = Country, values_from = value)# Convert data from long to wide format
+  
+  all_years = as.integer(c(lubridate::year(Sys.Date())-1):1993)# vector of all years to present
+  tot_area_dredged_piv <-tidyr::complete(tot_area_dredged_piv, Year = all_years, fill = list(Count = 0))# Add in missing years and add zeros
+  tot_area_dredged_piv <-  tot_area_dredged_piv[order(tot_area_dredged_piv$Year, decreasing = TRUE),] # Order data by year
+  
+  new_order = sort(colnames(tot_area_dredged_piv[2:ncol(tot_area_dredged_piv)]))# Sort columns (i.e. countries) in ascending alphabetical order
+  tot_area_dredged_piv2 <- tot_area_dredged_piv[, new_order]# Sort columns (i.e. countries) in ascending alphabetical order
+  tot_area_dredged_piv3 <- cbind(tot_area_dredged_piv$Year,tot_area_dredged_piv2)# Sort columns (i.e. countries) in ascending alphabetical order
+  colnames(tot_area_dredged_piv3)[1] <- 'Year'
+  
+  missing <- setdiff(vector_countries, names(tot_area_dredged_piv3))  # Find names of missing columns (i.e. countries that have submitted amounts)
+  tot_area_dredged_piv3[missing] <- 0# Add them, filled with '0's
+  tot_area_dredged_piv3 <- tot_area_dredged_piv3[vector_countries]## Put columns in desired order
+  tot_area_dredged_piv3 <- cbind(tot_area_dredged_piv[,1],tot_area_dredged_piv3)# bring in years column
+  tot_area_dredged_piv3[tot_area_dredged_piv3 == 0] <- NA #Replace on all columns
+  
+  tot_area_dredged_piv4 <- tot_area_dredged_piv3 %>%janitor::adorn_totals("row")%>%janitor::adorn_totals("col")### Add row and col sums
+  format <- formatter("span",style = x ~ style(color = ifelse(x, "green", "red")),x ~ icontext(ifelse(x, "ok", "remove")))# Specify format for tick symbols
+  output$tot_area_dredged <- renderFormattable({formattable(tot_area_dredged_piv4,align ="c",list(Normal = format,area(row = 1:nrow(tot_area_lic_piv4)-1, col = c(-1,-20)) ~ format))# Create table
+  })
+  #__________________________________________________________________________________________
   #### DOWNLOAD FAUNAL DATA FOR SELECTED SURVEY(S) ####  
   output$downloadData <- downloadHandler(
     filename = function() {
