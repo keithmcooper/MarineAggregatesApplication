@@ -17,6 +17,9 @@ library(scales)
 library(rgdal)
 library(zip)
 library(pool)
+library(formattable)
+library(tidyr)
+library(janitor)
 
 #__________________________________________________________________________________________
 #### CREATE A CONNECTION TO DB wgext ####
@@ -240,7 +243,9 @@ ui <- dashboardPage(
   #__________________________________________________________________________________________
   #### SIDEBAR ####
   
-  dashboardSidebar(selectInput(inputId="variableInput", multiple = T,h4("Select country",style="color:white"),choices = c("",as.character(unique(data$country_countryname)))),
+  dashboardSidebar(
+
+    selectInput(inputId="variableInput", multiple = T,h4("Select country",style="color:white"),choices = c("",as.character(unique(data$country_countryname)))),
                    #################
                    selectInput(inputId="yearInput", multiple = T,h4("Select year",style="color:white"),choices = c(2022:1993)),#,selected =2020
                    #selectInput(inputId="fillInput", multiple = F,h4("Select fill",style="color:white"),choices = c("aggcategory_type","conventionarea_areaname"),selected ="aggcategory_type"),
@@ -343,8 +348,18 @@ Your access to and use of the content available on this app is entirely at your 
              tabPanel("Country",width = NULL,plotOutput("AreaCountry")),
              tabPanel("Detail",width = NULL,plotOutput("areacountryselect")),
              tabPanel("AREA LICENSED (ALL2)",width = NULL,plotOutput("extbyyearjur")),
-            tabPanel("Spatial data (licensed)", div(DT::dataTableOutput("spat_lic"),style = 'font-size:85%')),
-            tabPanel("Spatial data (dredged)", div(DT::dataTableOutput("spat_dredged"),style = 'font-size:85%'))
+            #tabPanel("Spatial data (licensed)", div(DT::dataTableOutput("spat_lic"),style = 'font-size:85%')),
+            tabPanel("Spatial Data Availability",
+            tabsetPanel(
+            tabPanel("Licensed Areas",
+                     div(style = 'overflow-y:scroll;height:380px;',# add vertical scrollbar
+                     div(formattableOutput("spat_lic"),style = 'font-size:85%'))),
+            #tabPanel("Dredged Footprints", div(DT::dataTableOutput("spat_dredged"),style = 'font-size:85%'))
+            tabPanel("Dredged Footprints",
+                     div(style = 'overflow-y:scroll;height:380px;',# add vertical scrollbar
+                         div(formattableOutput("spat_dredged"),style = 'font-size:85%')))
+            )
+            )
              #tabPanel("Spatial data (dredged)", width = NULL, plotOutput("extbyyearjur"))
              
              #)
@@ -352,7 +367,7 @@ Your access to and use of the content available on this app is entirely at your 
     )))
 
 ######################
-
+box(formattableOutput("table"))
 
 
 #__________________________________________________________________________________________
@@ -750,19 +765,39 @@ server <- function(input, output, session) {
   #"Total","Construction","Beach","Fill","Non-agg","Exp",
   #__________________________________________________________
   #### spatial (licensed) table ####
-  output$spat_lic <- renderDataTable({
-    DT::datatable(subset(spatial_licensed, Country %in%input$variableInput),options = list(pageLength = 8), rownames= FALSE)
+ # output$spat_lic <- renderDataTable({
+  #  DT::datatable(subset(spatial_licensed, Country %in%input$variableInput),options = list(pageLength = 8), rownames= FALSE)
+  #   })
     
-    #DT::datatable(listapps2, options = list(pageLength = 14),escape=FALSE)
-    
+  spatial_licensed$value <- 1# Create a data value of 1 for each instance where licence data exist
+  spatial_licensed$Country <- as.factor(spatial_licensed$Country) ## Ensure data in correct format
+  spatial_licensed2 <- spatial_licensed[order(spatial_licensed$Year, decreasing = TRUE),] # Order data by year
+  spatial_licensed_piv <- pivot_wider(spatial_licensed2, names_from = Country, values_from = value)# Convert data from long to wide format
+  new_order = sort(colnames(spatial_licensed_piv[2:ncol(spatial_licensed_piv)]))# Sort columns (i.e. countries) in ascending alphabetical order
+  spatial_licensed_piv2 <- spatial_licensed_piv[, new_order]# Sort columns (i.e. countries) in ascending alphabetical order
+  spatial_licensed_piv3 <- cbind(spatial_licensed_piv$Year,spatial_licensed_piv2)# Sort columns (i.e. countries) in ascending alphabetical order
+  colnames(spatial_licensed_piv3)[1] <- 'Year'
+  spatial_licensed_piv4 <- spatial_licensed_piv3 %>%janitor::adorn_totals("row")%>%janitor::adorn_totals("col")### Add row and col sums
+  format <- formatter("span",style = x ~ style(color = ifelse(x, "green", "red")),x ~ icontext(ifelse(x, "ok", "remove")))# Specify format for tick symbols
+  output$spat_lic <- renderFormattable({formattable(spatial_licensed_piv4,align ="c",list(Normal = format,area(row = 1:nrow(spatial_licensed_piv4)-1, col = c(-1,-15)) ~ format))# Create table
   })
+
   #__________________________________________________________________________________________
-  #### spatial (licensed) table ####
-  output$spat_dredged <- renderDataTable({
-    DT::datatable(subset(spatial_dredged, Country %in%input$variableInput),options = list(pageLength = 8), rownames= FALSE)
-    
-    #DT::datatable(listapps2, options = list(pageLength = 14),escape=FALSE)
-    
+  #### spatial (dredged) table ####
+ # output$spat_dredged <- renderDataTable({
+ #   DT::datatable(subset(spatial_dredged, Country %in%input$variableInput),options = list(pageLength = 8), rownames= FALSE)
+  # })
+  spatial_dredged$value <- 1# Create a data value of 1 for each instance where licence data exist
+  spatial_dredged$Country <- as.factor(spatial_dredged$Country) ## Ensure data in correct format
+  spatial_dredged2 <- spatial_dredged[order(spatial_dredged$Year, decreasing = TRUE),] # Order data by year
+  spatial_dredged_piv <- pivot_wider(spatial_dredged2, names_from = Country, values_from = value)# Convert data from long to wide format
+  new_order = sort(colnames(spatial_dredged_piv[2:ncol(spatial_dredged_piv)]))# Sort columns (i.e. countries) in ascending alphabetical order
+  spatial_dredged_piv2 <- spatial_dredged_piv[, new_order]# Sort columns (i.e. countries) in ascending alphabetical order
+  spatial_dredged_piv3 <- cbind(spatial_dredged_piv$Year,spatial_dredged_piv2)# Sort columns (i.e. countries) in ascending alphabetical order
+  colnames(spatial_dredged_piv3)[1] <- 'Year'
+  spatial_dredged_piv4 <- spatial_dredged_piv3 %>%janitor::adorn_totals("row")%>%janitor::adorn_totals("col")### Add row and col sums
+  format <- formatter("span",style = x ~ style(color = ifelse(x, "green", "red")),x ~ icontext(ifelse(x, "ok", "remove")))# Specify format for tick symbols
+  output$spat_dredged <- renderFormattable({formattable(spatial_dredged_piv4,align ="c",list(Normal = format,area(row = 1:nrow(spatial_dredged_piv4)-1, col = c(-1,-4)) ~ format))# Create table
   })
   #________________________________  
   #### DOWNLOAD FAUNAL DATA FOR SELECTED SURVEY(S) ####  
