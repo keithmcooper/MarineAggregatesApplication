@@ -307,7 +307,7 @@ ui <- dashboardPage(
                    #    selectInput(inputId="variableInput", multiple = F,h4("Select variable",style="color:white"),choices = c("",as.character(unique(long$variable)))),
                    #                  selectInput(inputId="valueInput", multiple = F,h4("Select value",style="color:white"),choices =NULL)
                    
-                   br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+                   br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
                   # h4("***ATTENTION***TEST VERSION USE DATA WITH CAUTION"),
                    #__________________________________________________________________________________________
                    #### OB LOGO ####
