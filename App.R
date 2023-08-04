@@ -1,5 +1,5 @@
 #### THIS IS THE ONEBENTHIC SHINY DASHBOARD ####
-
+#test
 #### LOAD LIBRARIES ####
 library(shinydashboard)
 library(shiny)
@@ -283,7 +283,7 @@ colnames(tot_area_dredged) <- c("Country","Year")
 ui <- dashboardPage(
   #__________________________________________________________________________________________
   #### HEADER ####  
-  dashboardHeader(title=tags$b("Dredging Stats Dashboard "),titleWidth = 400),#title = "OneBenthic dashboard"
+  dashboardHeader(title=tags$b("WGEXT Dredging Stats Dashboard "),titleWidth = 400),#title = "OneBenthic dashboard"
   
   #__________________________________________________________________________________________
   #### SIDEBAR ####
@@ -370,13 +370,14 @@ Your access to and use of the content available on this app is entirely at your 
       #column(width = 5,
       #box(background="black",
       tabBox(title = tags$b("QUANTITY"),#width="100%",
-             side = "right", height = "490px",id="tabset1",
+             side = "right", height = "520px",id="tabset1",
              selected = "Total",
              tabPanel("Stats",div(DT::dataTableOutput("dredgestatquantity"),style = 'font-size:85%'),downloadButton("downloadData", "Download data")),
              tabPanel("Extracted",div(DT::dataTableOutput("totalcumext"),style = 'font-size:85%')),
              tabPanel("Cum",width = NULL,plotOutput("totalcum")),
              tabPanel("By country",width = NULL,plotOutput("amountcountryselect")),
              ####
+             
              tabPanel("Data Availbility",
                       div(style = 'overflow-y:scroll;height:420px;',
                       width = NULL,div(formattableOutput("amounts_data_avail"),style = 'font-size:58%'))),
@@ -392,7 +393,7 @@ Your access to and use of the content available on this app is entirely at your 
       #column(width = 5,
       #box( background="black", 
       tabBox(title = tags$b("AREA"),id="tabset2",#width="100%",
-             side = "left", height = "490px",
+             side = "left", height = "520px",
              selected = "All",
              tabPanel("All",width = NULL,plotOutput("licareaall")),
              tabPanel("Country",width = NULL,plotOutput("AreaCountry")),
