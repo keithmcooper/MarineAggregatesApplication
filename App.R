@@ -141,8 +141,11 @@ datacumplot = dbGetQuery(pool,
 ## remove 2013 data
 #datacumplot2 <- datacumplot[which(datacumplot$year!= 2013),]
 
+
+## Take only cols 1-6 (otherwise the notes col leads to data being removed in next step)
+datacumplot1 <- datacumplot[,1:6]
 ## remove na
-datacumplot2 <- datacumplot[complete.cases(datacumplot),]
+datacumplot2 <- datacumplot1[complete.cases(datacumplot1),]
 
 datacumplot3 <- datacumplot2[,c(2,4,5,6),]
 datacumplot4 <- datacumplot3%>%group_by(year,aggcategory_type,conventionarea_areaname)%>%summarize(x=sum(volume))
