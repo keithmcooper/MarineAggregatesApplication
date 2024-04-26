@@ -1,5 +1,5 @@
 #### THIS IS THE ONEBENTHIC SHINY DASHBOARD ####
-#test
+#setwd("C:/Users/kmc00/OneDrive - CEFAS/R_PROJECTS/DredgingDashboard/dev scripts")
 #### LOAD LIBRARIES ####
 library(shinydashboard)
 library(shiny)
@@ -141,7 +141,6 @@ datacumplot = dbGetQuery(pool,
 ## remove 2013 data
 #datacumplot2 <- datacumplot[which(datacumplot$year!= 2013),]
 
-
 ## Take only cols 1-6 (otherwise the notes col leads to data being removed in next step)
 datacumplot1 <- datacumplot[,1:6]
 ## remove na
@@ -237,7 +236,7 @@ colnames(spatial_dredged) <- c("Country","Year")
 #### Amounts data availability ####
 
 amounts_data_avail = dbGetQuery(pool,
-                  "SELECT
+                                "SELECT
 DISTINCT 
 country_countryname as country,
 year
@@ -251,7 +250,7 @@ colnames(amounts_data_avail) <- c("Country","Year")
 #__________________________________________________________________________________________
 #### Unique countries in Amounts table ####
 countries = dbGetQuery(pool,
-                                "SELECT
+                       "SELECT
 DISTINCT 
 country_countryname as country
 FROM
@@ -263,7 +262,7 @@ vector_countries <- c(t(countries))
 #__________________________________________________________________________________________
 #### total area licensed (countries/years reported) ####
 tot_area_lic = dbGetQuery(pool,
-                       "SELECT DISTINCT 
+                          "SELECT DISTINCT 
 country_countryname as country,
 year
 FROM areas.licence
@@ -273,7 +272,7 @@ colnames(tot_area_lic) <- c("Country","Year")
 #__________________________________________________________________________________________
 #### total area footprint (countries/years reported) ####
 tot_area_dredged = dbGetQuery(pool,
-                          "SELECT DISTINCT 
+                              "SELECT DISTINCT 
 country_countryname as country,
 year
 FROM areas.licence
@@ -281,7 +280,41 @@ WHERE totalareadredged IS NOT NULL;")
 
 colnames(tot_area_dredged) <- c("Country","Year")
 #__________________________________________________________________________________________
-#### UI ####
+## Publications
+publications = dbGetQuery(pool,
+                          "select 
+                              p.title,
+                              p.ref,
+                              p.url,
+                              p.year,
+                              p.country_countryname,
+                              pt.tag_name
+                              
+                          FROM
+                          publications.publication as p
+                          inner join publications.publication_tag as pt on p.ref = pt.publication_ref
+                          ;")
+
+#publications <- publications[,2:5]
+colnames(publications)[1] <- 'Title'
+colnames(publications)[2] <- 'Reference'
+colnames(publications)[3] <- 'url'
+colnames(publications)[4] <- 'Year'
+colnames(publications)[5] <- 'Country'
+#__________________________________________________________________________________________
+## Management
+management = dbGetQuery(pool,
+                        "select * from management.management;")
+management <- management[,2:4]
+colnames(management)[1] <- 'Country'
+#__________________________________________________________________________________________
+## Guidelines
+guidelines = dbGetQuery(pool,
+                        "select * from management.guidelines;")
+guidelines <- guidelines[,2:3]
+#__________________________________________________________________________________________
+## app.R ##
+library(shinydashboard)
 
 ui <- dashboardPage(
   #__________________________________________________________________________________________
@@ -290,155 +323,229 @@ ui <- dashboardPage(
   
   #__________________________________________________________________________________________
   #### SIDEBAR ####
-  
   dashboardSidebar(
-
-    selectInput(inputId="variableInput", multiple = T,h4("Select country",style="color:white"),choices = c("",as.character(unique(data$country_countryname)))),
-                   #################
-                   selectInput(inputId="yearInput", multiple = T,h4("Select year",style="color:white"),choices = c(2022:1993)),#,selected =2020
-                   #selectInput(inputId="fillInput", multiple = F,h4("Select fill",style="color:white"),choices = c("aggcategory_type","conventionarea_areaname"),selected ="aggcategory_type"),
-                   br(),#br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
-                   tags$style(
-                     ".main-sidebar {padding-left:10px;}"),
-                   h4("Map downloads (.shp)",style="color:white"),
-                   downloadButton('AreaLicensedExport', 'Licencesed Polygons'),br(),br(),
-                   downloadButton('AreaDredgedExport', 'Dredged Polygons'),
-                   br(),br(),br(),
-                   selectInput(inputId="fillInput", multiple = F,h4("Barplot fill (QUANTITY)",style="color:white"),choices = c("aggcategory_type","conventionarea_areaname"),selected ="aggcategory_type"),
-                   ############
-                   #h4("Map options:"),
-                   #    selectInput(inputId="variableInput", multiple = F,h4("Select variable",style="color:white"),choices = c("",as.character(unique(long$variable)))),
-                   #                  selectInput(inputId="valueInput", multiple = F,h4("Select value",style="color:white"),choices =NULL)
-                   
-                   br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
-                  # h4("***ATTENTION***TEST VERSION USE DATA WITH CAUTION"),
-                   #__________________________________________________________________________________________
-                   #### OB LOGO ####
-                   #   HTML('&emsp;'), HTML('&emsp;'),img(src="OBLogo.png",height = 85, width =160),
-                   
-                   #__________________________________________________________________________________________
-                   #### OTHER LOGOS ####
-                   HTML('&emsp;'),img(src="iceslogov3.png", width="77%"),#,height = 50, width =80
-                   ##HTML('&emsp;'),img(src="postgreslogo.png",height = 50, width =50),
-                   ##HTML('&emsp;'),img(src="rstudiologo.png",height = 50, width =50),
-                   ##HTML('&emsp;'),img(src="rshinylogo.png",height = 50, width =50),
-                   br()),
-  
-  
-  #__________________________________________________________________________________________
-  #### DASHBOARD BODY ####
-  
-  #img(src="logos_long.png",height = 300, width = 50)
+    
+    #____________________________________________
+    
+    sidebarMenu(
+      id = "tabs",
+      # adding sidebar tools to each menu item https://stackoverflow.com/questions/43003817/shiny-dashboard-inputs-inside-menuitems-problems
+      menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")#,
+               
+               
+               
+               
+      ),#menuItem 'dahboard' close
+      
+      conditionalPanel(
+        "input.tabs == 'dashboard'",
+        #____________________________________________
+        
+        selectInput(inputId="variableInput", multiple = T,h4("Select country",style="color:white"),choices = c("",as.character(sort(unique(data$country_countryname))))),
+        #################
+        selectInput(inputId="yearInput", multiple = T,h4("Select year",style="color:white"),choices = c(2023:1993)),#,selected =2020
+        #selectInput(inputId="fillInput", multiple = F,h4("Select fill",style="color:white"),choices = c("aggcategory_type","conventionarea_areaname"),selected ="aggcategory_type"),
+        br(),#br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+        tags$style(
+          ".main-sidebar {padding-left:10px;}"),
+        h4("Map downloads (.shp)",style="color:white"),
+        downloadButton('AreaLicensedExport', 'Licencesed Polygons'),br(),br(),
+        downloadButton('AreaDredgedExport', 'Dredged Polygons'),
+        br(),br(),br(),
+        selectInput(inputId="fillInput", multiple = F,h4("Barplot fill (QUANTITY)",style="color:white"),choices = c("aggcategory_type","conventionarea_areaname"),selected ="aggcategory_type")
+        
+        #____________________________________________
+      ),
+      
+      
+      
+      
+      conditionalPanel(
+        "input.tabs == 'publications'",
+        #____________________________________________
+        
+        selectInput(inputId="subjectInput", multiple = T,h4("Select keywords",style="color:white"),choices = c("",as.character(sort(unique(publications$tag_name)))))
+        
+        #____________________________________________
+      ),
+      
+      
+      
+      
+      
+      #menuItem("Publications", tabName = "publications", icon = icon("th")),
+      menuItem("Publications", tabName = "publications", icon = icon("book")),
+      
+      
+      #_______________________________________________
+      conditionalPanel(
+        "input.tabs == 'management'",
+        #____________________________________________
+        
+        selectInput(inputId="country2Input", multiple = T,h4("Select Country",style="color:white"),choices = c("",as.character(unique(management$Country)))),#country_countryname
+        selectInput(inputId="elementInput", multiple = F,h4("Select element",style="color:white"),choices = c("",as.character(unique(management$element))))
+        
+        #____________________________________________
+      ),
+      
+      
+      #______________________________________________
+      # menuItem("Management", tabName = "management", icon = icon("list-check")),
+      
+      
+      
+      
+      
+      
+      
+      ############
+      #h4("Map options:"),
+      #    selectInput(inputId="variableInput", multiple = F,h4("Select variable",style="color:white"),choices = c("",as.character(unique(long$variable)))),
+      #                  selectInput(inputId="valueInput", multiple = F,h4("Select value",style="color:white"),choices =NULL)
+      
+      br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+      # h4("***ATTENTION***TEST VERSION USE DATA WITH CAUTION"),
+      #__________________________________________________________________________________________
+      #### OB LOGO ####
+      #   HTML('&emsp;'), HTML('&emsp;'),img(src="OBLogo.png",height = 85, width =160),
+      
+      #__________________________________________________________________________________________
+      #### OTHER LOGOS ####
+      HTML('&emsp;'),img(src="iceslogov3.png", width="77%"),#,height = 50, width =80
+      ##HTML('&emsp;'),img(src="postgreslogo.png",height = 50, width =50),
+      ##HTML('&emsp;'),img(src="rstudiologo.png",height = 50, width =50),
+      ##HTML('&emsp;'),img(src="rshinylogo.png",height = 50, width =50),
+      br()
+      
+    )#sidebarMenu close
+    #____________________________________________
+    
+    
+  ),
   dashboardBody(
-    # Boxes need to be put in a row (or column)
     
-    
-    ##############
     modalDialog(
       h4("This app is being developed by the",tags$a(href="https://www.ices.dk/community/groups/pages/wgext.aspx","ICES WGEXT"),
-      " and is made available for use on an as is and as available basis. No warranty is given in relation to the accuracy of the
+         " and is made available for use on an as is and as available basis. No warranty is given in relation to the accuracy of the
       content or in respect of its use for any particular purpose. Note the app is still in development and it's contents are
       incomplete (see",tags$a(href="https://sway.office.com/orIuJoHSruYfhy09?ref=Link","here")," for further information).
 Your access to and use of the content available on this app is entirely at your own risk. This work is licensed under",
-      tags$a(href="https://creativecommons.org/licenses/by/4.0/?ref=chooser-v1","CC BY 4.0"),"."),
+         tags$a(href="https://creativecommons.org/licenses/by/4.0/?ref=chooser-v1","CC BY 4.0"),"."),
       title = h4("Disclaimer"),
       size = "l",
       easyClose = FALSE
     ),
+    #____________________________________________
+    tabItems(
+      #____________________________________________
+      # First tab content
+      tabItem(tabName = "dashboard",
+              #____________________________________________
+              # Boxes need to be put in a row (or column)
+              fluidRow(
+                
+                leafletOutput("map",width="100%", height="400")#
+                
+              ),    
+              
+              fluidRow(
+                
+                
+                #____________________________________________
+                tabBox(title = tags$b("QUANTITY"),#width="100%",
+                       side = "right", height = "520px",id="tabset1",
+                       selected = "Total",
+                       tabPanel("Stats",div(DT::dataTableOutput("dredgestatquantity"),style = 'font-size:85%'),downloadButton("downloadData", "Download data")),
+                       tabPanel("Extracted",div(DT::dataTableOutput("totalcumext"),style = 'font-size:85%')),
+                       tabPanel("Cum",width = NULL,plotOutput("totalcum")),
+                       tabPanel("By country",width = NULL,plotOutput("amountcountryselect")),
+                       ####
+                       
+                       tabPanel("Data Availbility",
+                                div(style = 'overflow-y:scroll;height:420px;',
+                                    width = NULL,div(formattableOutput("amounts_data_avail"),style = 'font-size:58%'))),
+                       #amounts_data_avail 
+                       ###########
+                       tabPanel("All",width = NULL,plotOutput("yearplot")),
+                       
+                       tabPanel("Total",width = NULL,plotOutput("totextyrall"))
+                       #)
+                ),
+                
+                
+                #column(width = 5,
+                #box( background="black", 
+                tabBox(title = tags$b("AREA"),id="tabset2",#width="100%",
+                       side = "left", height = "520px",
+                       selected = "All",
+                       tabPanel("All",width = NULL,plotOutput("licareaall")),
+                       tabPanel("Country",width = NULL,plotOutput("AreaCountry")),
+                       tabPanel("Detail",width = NULL,plotOutput("areacountryselect")),
+                       tabPanel("AREA LICENSED (ALL2)",width = NULL,plotOutput("extbyyearjur")),
+                       #tabPanel("Spatial data (licensed)", div(DT::dataTableOutput("spat_lic"),style = 'font-size:85%')),
+                       tabPanel("Spatial Data Availability",
+                                tabsetPanel(
+                                  tabPanel("Licensed Areas (.shp)",
+                                           div(style = 'overflow-y:scroll;height:380px;',# add vertical scrollbar
+                                               div(formattableOutput("spat_lic"),style = 'font-size:58%'))),
+                                  
+                                  #tabPanel("Dredged Footprints", div(DT::dataTableOutput("spat_dredged"),style = 'font-size:85%'))
+                                  tabPanel("Dredged Footprints (.shp)",
+                                           div(style = 'overflow-y:scroll;height:380px;',# add vertical scrollbar
+                                               div(formattableOutput("spat_dredged"),style = 'font-size:58%'))),
+                                  tabPanel("Total Area Licensed (km2)",
+                                           div(style = 'overflow-y:scroll;height:380px;',# add vertical scrollbar
+                                               div(formattableOutput("tot_area_lic"),style = 'font-size:58%') )),
+                                  tabPanel("Total Area Footprint (km2)",
+                                           div(style = 'overflow-y:scroll;height:380px;',# add vertical scrollbar
+                                               div(formattableOutput("tot_area_dredged"),style = 'font-size:58%'
+                                               )
+                                           )
+                                  )
+                                )#tabsetPanel close
+                       )# tabPanel close 'Spatial Data Availability'
+                       
+                )# tabBox close
+                #____________________________________________
+              )#fluidrow close
+              #____________________________________________
+      ),##tabitem 'dashboard' close
+      #____________________________________________
+      # Second tab content
+      tabItem(tabName = "publications",
+              h2("Papers"),
+              DT::dataTableOutput("mytable")
+      ),#tabitem 'publications' end
+      #____________________________________________
+      
+      # Second tab content
+      tabItem(tabName = "management",
+              #h2("Management: ", textOutput("selected_element")),
+              h2("Management: "),
+              DT::dataTableOutput("managementtable"),
+              h2("Guidelines"),
+              DT::dataTableOutput("guidelinestable")
+      )#tabitem 'publications' end
+      #____________________________________________
+    )#tabItems end
+    #____________________________________________
     
-    ###############
-    #__________________________________________________________________________________________
-    #### INFO BOXES ####   
-    #fluidRow(infoBoxOutput("purpose",width=12)),
-    #fluidRow(
-    #infoBoxOutput("samples",width=3)#,
-    # infoBoxOutput("surveys",width=3),
-    # infoBoxOutput("records",width=3),
-    # infoBoxOutput("taxa",width=3),
-    # infoBoxOutput("providers",width=3),
-    # infoBoxOutput("value",width=3),
-    # infoBoxOutput("papers",width=3),
-    # infoBoxOutput("apps",width=3)
-    #),
-    #__________________________________________________________________________________________
-    #### MAP ####
-    fluidRow(
-      
-      leafletOutput("map",width="100%", height="400")#
-      
-    ),
-    
-    ######################
-    fluidRow( 
-      #column(width = 5,
-      #box(background="black",
-      tabBox(title = tags$b("QUANTITY"),#width="100%",
-             side = "right", height = "520px",id="tabset1",
-             selected = "Total",
-             tabPanel("Stats",div(DT::dataTableOutput("dredgestatquantity"),style = 'font-size:85%'),downloadButton("downloadData", "Download data")),
-             tabPanel("Extracted",div(DT::dataTableOutput("totalcumext"),style = 'font-size:85%')),
-             tabPanel("Cum",width = NULL,plotOutput("totalcum")),
-             tabPanel("By country",width = NULL,plotOutput("amountcountryselect")),
-             ####
-             
-             tabPanel("Data Availbility",
-                      div(style = 'overflow-y:scroll;height:420px;',
-                      width = NULL,div(formattableOutput("amounts_data_avail"),style = 'font-size:58%'))),
-             #amounts_data_avail 
-             ###########
-             tabPanel("All",width = NULL,plotOutput("yearplot")),
-             
-             tabPanel("Total",width = NULL,plotOutput("totextyrall"))
-             #)
-      ),
-      
-      
-      #column(width = 5,
-      #box( background="black", 
-      tabBox(title = tags$b("AREA"),id="tabset2",#width="100%",
-             side = "left", height = "520px",
-             selected = "All",
-             tabPanel("All",width = NULL,plotOutput("licareaall")),
-             tabPanel("Country",width = NULL,plotOutput("AreaCountry")),
-             tabPanel("Detail",width = NULL,plotOutput("areacountryselect")),
-             tabPanel("AREA LICENSED (ALL2)",width = NULL,plotOutput("extbyyearjur")),
-            #tabPanel("Spatial data (licensed)", div(DT::dataTableOutput("spat_lic"),style = 'font-size:85%')),
-            tabPanel("Spatial Data Availability",
-            tabsetPanel(
-            tabPanel("Licensed Areas (.shp)",
-                     div(style = 'overflow-y:scroll;height:380px;',# add vertical scrollbar
-                     div(formattableOutput("spat_lic"),style = 'font-size:58%'))),
-            
-            #tabPanel("Dredged Footprints", div(DT::dataTableOutput("spat_dredged"),style = 'font-size:85%'))
-            tabPanel("Dredged Footprints (.shp)",
-                     div(style = 'overflow-y:scroll;height:380px;',# add vertical scrollbar
-                         div(formattableOutput("spat_dredged"),style = 'font-size:58%'))),
-            tabPanel("Total Area Licensed (km2)",
-                     div(style = 'overflow-y:scroll;height:380px;',# add vertical scrollbar
-                     div(formattableOutput("tot_area_lic"),style = 'font-size:58%') )),
-            tabPanel("Total Area Footprint (km2)",
-                     div(style = 'overflow-y:scroll;height:380px;',# add vertical scrollbar
-                         div(formattableOutput("tot_area_dredged"),style = 'font-size:58%') ))
-            )
-            )
-             #tabPanel("Spatial data (dredged)", width = NULL, plotOutput("extbyyearjur"))
-             
-             #)
-      )
-    )))
-
-######################
-box(formattableOutput("table"))
-
-
-#__________________________________________________________________________________________
-#### SERVER ####
-
-server <- function(input, output, session) {
+  )#dashboardbody closend
+  #____________________________________________
   
-  #__________________________________________________________________________________________
+)#dashboardPage close
+
+
+
+server <- function(input, output) {
+  set.seed(122)
+  histdata <- rnorm(500)
   
-  #__________________________________________________________________________________________ 
+  output$plot1 <- renderPlot({
+    data <- histdata[seq_len(input$slider)]
+    hist(data)
+  })
+  
   #### BASELINE DATA SUBSET ####
   eez2 <- reactive({
     # 1year,
@@ -826,10 +933,10 @@ server <- function(input, output, session) {
   #"Total","Construction","Beach","Fill","Non-agg","Exp",
   #__________________________________________________________
   #### Spatial Data Availability: Licensed Areas (.shp) ####
- # output$spat_lic <- renderDataTable({
+  # output$spat_lic <- renderDataTable({
   #  DT::datatable(subset(spatial_licensed, Country %in%input$variableInput),options = list(pageLength = 8), rownames= FALSE)
   #   })
-    
+  
   spatial_licensed$value <- 1# Create a data value of 1 for each instance where licence data exist
   spatial_licensed$Country <- as.factor(spatial_licensed$Country) ## Ensure data in correct format
   spatial_licensed2 <- spatial_licensed[order(spatial_licensed$Year, decreasing = TRUE),] # Order data by year
@@ -854,11 +961,11 @@ server <- function(input, output, session) {
   format <- formatter("span",style = x ~ style(color = ifelse(x, "green", "red")),x ~ icontext(ifelse(x, "ok", "remove")))# Specify format for tick symbols
   output$spat_lic <- renderFormattable({formattable(spatial_licensed_piv4,align ="c",list(Normal = format,area(row = 1:nrow(spatial_licensed_piv4)-1, col = c(-1,-20)) ~ format))# Create table
   })
-
+  
   #__________________________________________________________________________________________
   #### Spatial Data Availability: Dredged Footprints (km2) ####
- # output$spat_dredged <- renderDataTable({
- #   DT::datatable(subset(spatial_dredged, Country %in%input$variableInput),options = list(pageLength = 8), rownames= FALSE)
+  # output$spat_dredged <- renderDataTable({
+  #   DT::datatable(subset(spatial_dredged, Country %in%input$variableInput),options = list(pageLength = 8), rownames= FALSE)
   # })
   spatial_dredged$value <- 1# Create a data value of 1 for each instance where licence data exist
   spatial_dredged$Country <- as.factor(spatial_dredged$Country) ## Ensure data in correct format
@@ -873,7 +980,7 @@ server <- function(input, output, session) {
   spatial_dredged_piv2 <- spatial_dredged_piv[, new_order]# Sort columns (i.e. countries) in ascending alphabetical order
   spatial_dredged_piv3 <- cbind(spatial_dredged_piv$Year,spatial_dredged_piv2)# Sort columns (i.e. countries) in ascending alphabetical order
   colnames(spatial_dredged_piv3)[1] <- 'Year'
-
+  
   missing <- setdiff(vector_countries, names(spatial_dredged_piv3))  # Find names of missing columns (i.e. countries that have submitted amounts)
   spatial_dredged_piv3[missing] <- 0# Add them, filled with '0's
   spatial_dredged_piv3 <- spatial_dredged_piv3[vector_countries]## Put columns in desired order
@@ -894,7 +1001,7 @@ server <- function(input, output, session) {
   all_years = as.integer(c(lubridate::year(Sys.Date())-1):1993)# vector of all years to present
   amounts_data_avail_piv <-tidyr::complete(amounts_data_avail_piv, Year = all_years, fill = list(Count = 0))# Add in missing years and add zeros
   amounts_data_avail_piv <-  amounts_data_avail_piv[order( amounts_data_avail_piv$Year, decreasing = TRUE),] # Order data by year
- 
+  
   new_order = sort(colnames(amounts_data_avail_piv[2:ncol(amounts_data_avail_piv)]))# Sort columns (i.e. countries) in ascending alphabetical order
   amounts_data_avail_piv2 <- amounts_data_avail_piv[, new_order]# Sort columns (i.e. countries) in ascending alphabetical order
   amounts_data_avail_piv3 <- cbind(amounts_data_avail_piv$Year,amounts_data_avail_piv2)# Sort columns (i.e. countries) in ascending alphabetical order
@@ -967,7 +1074,70 @@ server <- function(input, output, session) {
       write.csv(dredgestatquantity4selected,file,row.names = F)
     })
   
-  #__________________________________________________________________________________________  
+  #__________________________________________________________________________________________
+  
+  publications_sel <- reactive({
+    
+    
+    #management2 <- subset( management,country_countryname %in% 'United Kingdom')
+    #publications2 <- subset( publication,country_countryname %in% input$country2Input)
+    publication2 <- subset( publications,tag_name %in% input$subjectInput)
+    
+    publication3 <- unique(publication2[,1:5])
+    return( publication3)
+  })
+  
+  
+  ## Publications table
+  output$mytable = DT::renderDataTable(
+    publications_sel(),
+    options = list(pageLength = 10, lengthChange = FALSE),
+    rownames= FALSE
+  )
+  #__________________________________________________________________________________________
+  management_sel <- reactive({
+    
+    
+    
+    #management2 <- subset( management,country_countryname %in% input$country2Input)
+    management2 <- subset( management,Country %in% input$country2Input)
+    management3 <- subset( management2,element %in% input$elementInput)
+    
+    return(management3)
+  })
+  
+  ## Management table
+  output$managementtable = DT::renderDataTable(
+    #management
+    management_sel(),
+    options = list(pageLength = 10, lengthChange = FALSE),
+    rownames= FALSE
+  )
+  
+  output$selected_element <- renderText({
+    paste( input$elementInput)
+  })
+  #__________________________________________________________________________________________
+  guidelines_sel <- reactive({
+    
+    
+    #management2 <- subset( management,country_countryname %in% 'United Kingdom')
+    guidelines2 <- subset( guidelines,element %in% input$elementInput)
+    guidelines3 <- as.data.frame(guidelines2[,2])
+    colnames(guidelines3)[1] <- 'Advice'
+    
+    return(guidelines3)
+  })
+  
+  ## Management table
+  output$guidelinestable = DT::renderDataTable(
+    #management
+    guidelines_sel(), 
+    options = list(dom = 't',pageLength = 1, lengthChange = FALSE),
+    rownames= FALSE
+    
+  )
+  #__________________________________________________________________________________________
   
   
   
