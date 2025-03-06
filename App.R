@@ -14,12 +14,18 @@ library(DBI)
 library(sf)
 library(sp)
 library(scales)
-library(rgdal)
+#library(rgdal)
 library(zip)
 library(pool)
 library(formattable)
 library(tidyr)
 library(janitor)
+library(shiny)
+library(shinydashboard)
+library(shinyBS)
+library(kableExtra)
+library(knitr)
+library(dplyr)
 
 #__________________________________________________________________________________________
 #### CREATE A CONNECTION TO DB wgext ####
@@ -317,6 +323,14 @@ guidelines <- guidelines[,2:3]
 library(shinydashboard)
 
 ui <- dashboardPage(
+  #####
+  ######
+  
+  
+  
+  #####
+  #####
+  
   #__________________________________________________________________________________________
   #### HEADER ####  
   dashboardHeader(title=tags$b("WGEXT Dredging Stats Dashboard "),titleWidth = 400),#title = "OneBenthic dashboard"
@@ -324,7 +338,21 @@ ui <- dashboardPage(
   #__________________________________________________________________________________________
   #### SIDEBAR ####
   dashboardSidebar(
-    
+    #____________________________________________
+    tags$head(
+      tags$style(HTML("
+        .sidebar {
+          position: relative;
+          height: 100vh;
+        }
+        .sidebar img {
+          position: absolute;
+          bottom: 75px;
+          left: 50%;
+          transform: translateX(-50%);
+        }
+      "))
+    ),
     #____________________________________________
     
     sidebarMenu(
@@ -358,8 +386,8 @@ ui <- dashboardPage(
       ),
       
       
-      
-      
+      menuItem("Publications", tabName = "publications", icon = icon("binoculars")),
+      # icon options: https://fontawesome.com/v4/icons/
       conditionalPanel(
         "input.tabs == 'publications'",
         #____________________________________________
@@ -374,21 +402,22 @@ ui <- dashboardPage(
       
       
       #menuItem("Publications", tabName = "publications", icon = icon("th")),
-      menuItem("Publications", tabName = "publications", icon = icon("book")),
+      #menuItem("Publications", tabName = "publications", icon = icon("book")),
       
       
       #_______________________________________________
-      conditionalPanel(
-        "input.tabs == 'management'",
+ #     menuItem("Management", tabName = "management", icon = icon("list-check")),
+ #     conditionalPanel(
+ #       "input.tabs == 'management'",
         #____________________________________________
         
-        selectInput(inputId="country2Input", multiple = T,h4("Select Country",style="color:white"),choices = c("",as.character(unique(management$Country)))),#country_countryname
-        selectInput(inputId="elementInput", multiple = F,h4("Select element",style="color:white"),choices = c("",as.character(unique(management$element))))
+ #       selectInput(inputId="country2Input", multiple = T,h4("Select Country",style="color:white"),choices = c("",as.character(unique(management$Country)))),#country_countryname
+ #       selectInput(inputId="elementInput", multiple = F,h4("Select element",style="color:white"),choices = c("",as.character(unique(management$element))))
         
         #____________________________________________
-      ),
-      
-      
+  #    ),
+      #____________________________________________
+      menuItem("Guidelines", tabName = "guidelines", icon = icon("book")),
       #______________________________________________
       # menuItem("Management", tabName = "management", icon = icon("list-check")),
       
@@ -403,7 +432,7 @@ ui <- dashboardPage(
       #    selectInput(inputId="variableInput", multiple = F,h4("Select variable",style="color:white"),choices = c("",as.character(unique(long$variable)))),
       #                  selectInput(inputId="valueInput", multiple = F,h4("Select value",style="color:white"),choices =NULL)
       
-      br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+      #br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
       # h4("***ATTENTION***TEST VERSION USE DATA WITH CAUTION"),
       #__________________________________________________________________________________________
       #### OB LOGO ####
@@ -411,11 +440,12 @@ ui <- dashboardPage(
       
       #__________________________________________________________________________________________
       #### OTHER LOGOS ####
-      HTML('&emsp;'),img(src="iceslogov3.png", width="77%"),#,height = 50, width =80
+      #HTML('&emsp;'),
+ img(src="iceslogov3.png", width="77%")#,#,height = 50, width =80
       ##HTML('&emsp;'),img(src="postgreslogo.png",height = 50, width =50),
       ##HTML('&emsp;'),img(src="rstudiologo.png",height = 50, width =50),
       ##HTML('&emsp;'),img(src="rshinylogo.png",height = 50, width =50),
-      br()
+      #br()
       
     )#sidebarMenu close
     #____________________________________________
@@ -519,12 +549,359 @@ Your access to and use of the content available on this app is entirely at your 
       #____________________________________________
       
       # Second tab content
-      tabItem(tabName = "management",
+#      tabItem(tabName = "management",
               #h2("Management: ", textOutput("selected_element")),
-              h2("Management: "),
-              DT::dataTableOutput("managementtable"),
-              h2("Guidelines"),
-              DT::dataTableOutput("guidelinestable")
+ #             h2("Management: "),
+ #             DT::dataTableOutput("managementtable")
+              #h2("Guidelines"),
+              #DT::dataTableOutput("guidelinestable")
+ #     ),#tabitem 'publications' end
+      #____________________________________________
+      # Second tab content
+      tabItem(tabName = "guidelines",
+              #h2("Management: ", textOutput("selected_element")),
+             
+             # h2(" ICES GUIDELINES FOR THE MANAGEMENT OF MARINE SEDIMENT EXTRACTION"),
+              #DT::dataTableOutput("managementtable"),
+              
+              
+ ##############################################################################             
+ #dashboardSidebar(),
+ #dashboardBody(
+ #  fluidRow(
+     box(
+       title = "ICES Guidelines for the Management of Marine Sediment Extraction",
+       width = 12,
+       tabBox(
+         id = "tabset1",
+         # Title can include an icon
+         #title = tagList(shiny::icon("gear"), "Version: 1.0"),
+         title = tagList(icon("file-alt", lib = "font-awesome"),"Guidelines version: 1.0"),
+         width = 12,
+         height = "850px",#250
+         tabPanel("Text", 
+                  bsCollapse(
+                    id = "collapseExample",
+                    
+                    #_______________________________________________________________________________
+                    ## INTRODUCTION ##
+                    bsCollapsePanel(
+                      ## Title                      
+                      "Introduction", 
+                      ## Text
+                      "In many countries sand and gravel1 dredged from the seabed makes an important contribution to the national demand for aggregates, directly replacing materials extracted from land-based sources. This reduces the pressure to work land of agricultural importance or environmental and hydrological value, and where materials can be landed close to the point of use, there can be additional benefits of avoiding long distance over land transport. Marine dredged sand and gravel is also increasingly used in flood and coastal defence, fill and land reclamation schemes. For beach replenishment, marine materials are usually preferred from an amenity point of view, and are generally considered to be the most appropriate economically, technically and environmentally.",
+                      br(),br(),
+                      "However, these benefits need to be balanced against the potential negative impacts of aggregate dredging. Aggregate dredging activity, if not carefully controlled, can cause significant damage to the seabed and its associated biota, to commercial fisheries and to the adjacent coastlines, as well as creating conflict with other users of the sea. In addition, current knowledge of the resource indicates that while there are extensive supplies of some types of marine sand, there appear to be more limited resources of gravel suitable, for example, to meet current concrete specifications and for beach nourishment." ,
+                      br(),br(),
+                      "Against the background of utilising a finite resource, with the associated environmental impacts, it is recommended that regulators develop and work within a strategic framework which provides a system for examining and reconciling the conflicting claims on land and at sea. Decisions on individual applications can then be made within the context of the strategic framework.",
+                      br(),br(),
+                      "General principles for the sustainable management of all mineral resources overall include:",
+                      br(),br(),
+                      ## Bullets
+                      tags$ul(
+                        tags$li("conserving minerals as far as possible, whilst ensuring that there are adequate supplies to meet the demands of society;"),
+                        tags$li("encouraging their efficient use (and where appropriate re-use), minimising wastage and avoiding the use of higher quality materials where lower grade materials would suffice; "),
+                        tags$li("ensuring that methods of extraction minimise the adverse effects on the environment, and preserve the overall quality of the environment once extraction has ceased;"),
+                        tags$li("the encouragement of an ecosystem approach to the management of extraction activities and identification of areas suitable for extraction;"),
+                        tags$li("protecting sensitive areas and important habitats (such as marine conservation areas) and industries (including fisheries) and the interests of other legitimate uses of the sea;"),
+                        tags$li("preventing unnecessary sterilisation of mineral resources by other forms of development.")),
+                      ## Text
+                      br(),br(),
+                      "The implementation of these principles requires a knowledge of the resource, and an understanding of the potential impacts of its extraction and of the extent to which rehabilitation of the seabed is likely to take place. The production of an Environmental Statement, developed along the lines suggested below, should provide a basis for determining the potential effects and identifying possible mitigating measures. There will be cases where the environment is too sensitive to disturbance to justify the extraction of aggregate, and unless the environmental and coastal issues can be satisfactorily resolved, extraction should not normally be allowed.",
+                      br(),br(),
+                      "It should also be recognised that improvements in technology may enable exploitation of marine sediments from areas of the seabed which are not currently commercially viable, while development of technical specifications for concrete, etc., may in the future enable lower quality materials to be used for a wider range of applications. In the shorter term, continuation of programmes of resource mapping may also identify additional sources of coarser aggregates.",
+                      style = "info"),
+                    #_______________________________________________________________________________
+                    ## SCOPE ##
+                    bsCollapsePanel(
+                      ## Title
+                      "Scope",
+                      ## Text
+                      p("It is recognised that sand and gravel extraction, if undertaken in an inappropriate way, may cause significant harm to the marine and coastal environment. There are a number of international and regional initiatives that should be taken into account when developing national frameworks and guidelines. These include the Convention on Biological Diversity (CBD), EU Directives (particularly those on birds, habitats, Environmental Impact Assessment (EIA), and Strategic Environmental Assessment (SEA)—once implemented) and other regional conventions/agreements, in particular the OSPAR and Helsinki Conventions, and initiatives pursued under them. This subject, for example, has recently been included in the Action Plan for Annex V to the 1992 OSPAR Convention on the Protection and Conservation of the Ecosystems and Biological Diversity of the Maritime Area as a human activity requiring assessment. It is also recognised that certain ecologically sensitive areas may not be designated under international, European, or national rules but nonetheless require particular consideration within the assessment procedures described in these Guidelines."), style = "info"),
+                    #_______________________________________________________________________________
+                    ## ADMINISTRATIVE FRAMEWORK ##
+                    bsCollapsePanel(
+                      ## Title
+                      "Administrative framework", 
+                      ## Text
+                      p("It is recommended that countries have an appropriate framework for the management of sand and gravel extraction and that they define and implement their own administrative framework with due regard to these guidelines. There should be a designated regulatory authority to:"),
+                      ## Bullets
+                      tags$ul(
+                        tags$li("issue authorisation having fully considered the potential environmental effects;"),
+                        tags$li("be responsible for compliance monitoring;"),
+                        tags$li("develop the framework for monitoring;"),
+                        tags$li("enforce conditions.")),
+                      style = "info"),
+                    #_______________________________________________________________________________
+                    ## ENVIRONMENTAL IMPACT ASSESSMENT ##
+                    bsCollapsePanel(
+                      ## Title
+                      "Environmental impact assessment", 
+                      ## Text
+                      "The extraction of sand and gravel from the seabed can have significant physical and biological effects on the marine and coastal environment. The significance and extent of the environmental effects will depend upon a range of factors including the location of the extraction area, the nature of the surface and underlying sediment, coastal processes, the design, method, rate, amount and intensity of extraction, and the sensitivity of habitats and assorted biodiversity, fisheries and other uses in the locality. These factors are considered in more detail below. Particular consideration should be given to sites designated under international, European, national and local legislation, in order to avoid unacceptable disturbance or deterioration of these areas for the habitats, species, and other designated features.", 
+                      br(),br(),
+                      "To enable the organisation(s) responsible for authorising extraction to evaluate the nature and scale of the effects and to decide whether a proposal can proceed, it is necessary that an adequate assessment of the environmental effects be carried out. It is important, for example, to determine whether the application is likely to have an effect on the coastline, or have potential impact on fisheries and the marine environment.",
+                      br(),br(),
+                      "The Baltic Marine Environment Protection Commission (Helsinki Commission) adopted HELCOM Recommendation 19/1 on 26 March 1998. This recommends to the Governments of Contracting Parties that an EIA should be undertaken in all cases before an extraction is authorised. For EU member states, the extraction of minerals from the seabed falls within Annex II of the “Directive on the Assessment of the Effects of Certain Public and Private Projects on the Environment” (85/337/EEC) As an Annex II activity, an EIA is required if the Member State takes the view that one is necessary. It is at the discretion of the individual Member States to define the criteria and/or threshold values that need to be met to require an EIA. The Directive was amended in March 1997 by Directive 97/11/EC. Member States are obliged to transpose the requirements of the Directive into national legislation by March 1999.",
+                      br(),br(),
+                      "It is recommended that the approach adopted within the EU be followed. Member States should therefore set their own thresholds for deciding whether and when an EIA is required, but it is recommended that an EIA always be undertaken where extraction is proposed in areas designated under international, European, or national rules and in other ecologically sensitive areas. For NATURA 2000 sites, Article 6 of the Habitats Directive contains special requirements in this respect.",
+                      br(),br(),
+                      "Where an EIA is considered appropriate, the level of detail required to identify the potential impacts on the environment should be carefully considered and identified on a site-specific basis. An EIA should normally be prepared for each extraction area, but in cases where multiple operations in the same area are proposed, a single impact assessment for the whole area may be more appropriate, which takes account of the potential for any cumulative impacts. In such cases, consideration should be given to the need for a strategic environmental assessment.",
+                      br(),br(),
+                      "Consultation is central to the EIA process. The framework for the content of the EIA should be established by early consultation with the regulatory authority, statutory consultees, and other interested parties. Where there are potential transboundary issues, it will be important to undertake consultation with the other countries likely to be affected, and the relevant Competent Authorities are encouraged to establish procedures for effective communication.",
+                      br(),br(),
+                      "As a general guide, it is likely that the following topics considered below will need to be addressed.",
+                      
+                      style = "info"),
+                    #_______________________________________________________________________________
+                    ## DESCRIPTION OF PHYSICAL SETTING ##
+                    bsCollapsePanel(
+                      ## Title
+                      "Description of the physical setting", 
+                      ## Text
+                      "The proposed extraction area should be identified by geographical location, and described in terms of:",br(),br(),
+                      ## Bullets
+                      tags$ul(
+                        tags$li("the bathymetry and topography of the general area;"),
+                        tags$li("the distance from the nearest coastlines;"),
+                        tags$li("the geological history of the deposit;"),
+                        tags$li("the source of the material;"),
+                        tags$li("type of material;"),
+                        tags$li("sediment particle size distribution;"),
+                        tags$li("extent and volume of the deposit;"),
+                        tags$li("the stability and/or natural mobility of the deposit;"),
+                        tags$li("thickness of the deposit and evenness over the proposed extraction area;"),
+                        tags$li("the nature of the underlying deposit, and any overburden;"),
+                        tags$li("local hydrography including tidal and residual water movements;"),
+                        tags$li("wind and wave characteristics;"),
+                        tags$li("average number of storm days per year;"),
+                        tags$li("estimate of bed-load sediment transport (quantity, grain size, direction);"),
+                        tags$li("topography of the seabed, including occurrence of bedforms;"),
+                        tags$li("existence of contaminated sediments and their chemical characteristics;"),
+                        tags$li("natural (background) suspended sediment load under both tidal currents and wave action.")),
+                      style = "info"),
+                    #_______________________________________________________________________________
+                    ## DESCRIPTION OF THE BIOLOGICAL SETTING ##
+                    bsCollapsePanel(
+                      ## Title
+                      "Description of the biological setting", 
+                      ## Text
+                      "The biological setting of the proposed extraction site and adjacent areas should be described in terms of:",br(),br(),
+                      ## Bullets
+                      tags$ul(
+                        tags$li("the flora and fauna within the area likely to be affected by aggregate dredging (e.g., pelagic and benthic community structure), taking into account temporal and spatial variability;"),
+                        tags$li("information on the fishery and shellfishery resources including spawning areas, with particular regard to benthic spawning fish, nursery areas, over-wintering grounds for ovigerous crustaceans, and known routes of migration;"),
+                        tags$li("trophic relationships (e.g., between the benthos and demersal fish populations by stomach content investigations);"),
+                        tags$li("presence of any areas of special scientific or biological interest in or adjacent to the proposed extraction area, such as sites designated under local, national or international regulations (e.g., Ramsar sites, the UNEP ”Man and the Biosphere” Reserves, World Heritage sites, Marine Protected Areas (MPAs) Marine Nature Reserves, Special Protection Areas (Birds Directive), or the Special Areas of Conservation (Habitats Directive)).")),
+                      style = "info"),
+                    #_______________________________________________________________________________
+                    ## DESCRIPTION OF THE PROPOSED AGGREGATE DREDGING ACTIVITY##
+                    bsCollapsePanel(
+                      ## Title
+                      "Description of the proposed aggregate dredging activity", 
+                      ## Text
+                      "The assessment should include, where appropriate, information on:",br(),br(),
+                      ## Bullets
+                      tags$ul(
+                        tags$li("the total volume to be extracted; "),
+                        tags$li("proposed maximum annual extraction rates and dredging intensity;"),
+                        tags$li("expected lifetime of the resource and proposed duration of aggregate dredging;"),
+                        tags$li("aggregate dredging equipment to be used;"),
+                        tags$li("spatial design and configuration of aggregate dredging (i.e., the maximum depth of deposit removal, the shape and area of resulting depression);"),
+                        tags$li("substrate composition on cessation of aggregate dredging;"),
+                        tags$li("proposals to phase (zone) operations;"),
+                        tags$li("whether on-board screening (i.e., rejection of fine or coarse fractions) will be carried out;"),
+                        tags$li("number of dredgers operating at a time;"),
+                        tags$li("routes to be taken by aggregate dredgers to and from the proposed extraction area;"),
+                        tags$li("time required for aggregate dredgers to complete loading;"),
+                        tags$li("number of days per year on which aggregate dredging will occur;"),
+                        tags$li("whether aggregate dredging will be restricted to particular times of the year or parts of the tidal cycle;"),
+                        tags$li("direction of aggregate dredging (e.g., with or across tide).")),
+                      ## Text
+                      "It may be appropriate, when known also to include details of the following:",br(),br(),
+                      ## Bullets
+                      tags$ul(
+                        tags$li("energy consumption and gaseous emissions;"),
+                        tags$li("ports for landing materials;"),
+                        tags$li("servicing ports;"),
+                        tags$li("on-shore processing and onward movement;"),
+                        tags$li("project-related employment.")),
+                      style = "info"),
+                    #_______________________________________________________________________________
+                    ## INFORMATION REQUIRED FOR PHYSICAL IMPACT ASSESSMENT##
+                    bsCollapsePanel(
+                      ## Title
+                      "Information required for physical impact assessment", 
+                      ## Text
+                      "To assess the physical impacts, the following should be considered:",br(),br(),
+                      ## Bullets
+                      tags$ul(
+                        tags$li("implications of extraction for coastal and offshore processes, including possible effects on beach draw down, changes to sediment supply and transport pathways, changes to wave and tidal climate;"),
+                        tags$li("changes to the seabed topography and sediment type"),
+                        tags$li("exposure of different substrates;"),
+                        tags$li("changes to the behaviour of bedforms within the extraction and adjacent areas;"),
+                        tags$li("potential risk of release of contaminants by aggregate dredging, and exposure of potentially toxic natural substances;"),
+                        tags$li("transport and settlement of fine sediment disturbed by the aggregate dredging equipment on the seabed, and from hopper overflow or on-board processing and its impact on normal and maximum suspended load;"),
+                        tags$li("the effects on water quality mainly through increases in the amount of fine material in suspension;"),
+                        tags$li("implications for local water circulation resulting from removal or creation of topographic features on the seabed;"),
+                        tags$li("the time scale for potential physical “recovery” of the seabed.")),
+                      style = "info"),
+                    #_______________________________________________________________________________
+                    ## INFORMATION REQUID FOR BIOLOGICAL IMPACT ASSESSMENT ##
+                    bsCollapsePanel(
+                      ## Title
+                      "Information required for biological impact assessment",
+                      ## Text
+                      "To assess the biological impact, the following information should be considered:", br(),br(),
+                      ## Bullets
+                      tags$ul(tags$li("changes to the benthic community structure, and to any ecologically sensitive species or habitats that may be particularly vulnerable to extraction operations;"),
+                              tags$li("effects of aggregate dredging on pelagic biota;"),
+                              tags$li("effects on the fishery and shellfishery resources including spawning areas, with particular regard to benthic spawning fish, nursery areas, over-wintering grounds for ovigerous crustaceans, and known routes of migration;"),
+                              tags$li("effects on trophic relationships (e.g., between the benthos and demersal fish populations);"),
+                              tags$li("Effects on sites designated under local, national or international regulations (see above);"),
+                              tags$li("predicted rate and mode of recolonisation, taking into account initial community structure, natural temporal changes, local hydrodynamics, and any predicted change of sediment type;"),
+                              tags$li("effects on marine flora and fauna including seabirds and mammals;"),
+                              tags$li(" effects on the ecology of boulder fields/stone reefs.")),
+                      style = "info"),
+                    #_______________________________________________________________________________
+                    ## INTERFERENCE WITH OTHER LEGITIMATE USERS OF THE SEA ##
+                    bsCollapsePanel(
+                      ## Title
+                      "Interference with other legitimate uses of the sea",
+                      ## Text
+                      "The assessment should consider the following in relation to the proposed programme of extraction:", br(),br(),
+                      ## Bullets
+                      tags$ul(tags$li("commercial fisheries;"),
+                              tags$li("shipping and navigation lanes;"),
+                              tags$li("military exclusion zones;"),
+                              tags$li("offshore oil and gas activities;"),
+                              tags$li("engineering uses of the seabed (e.g., adjacent extraction activities, undersea cables and pipelines including associated safety and exclusion zones);"),
+                              tags$li("areas designated for the disposal of dredged or other materials;"),
+                              tags$li("location in relation to existing or proposed aggregate extraction areas;"),
+                              tags$li("location of wrecks and war-graves in the area and general vicinity;"),
+                              tags$li("wind farms;"),
+                              tags$li("areas of heritage, nature conservation, archaeological and geological importance;"),
+                              tags$li("recreational uses;"),
+                              tags$li("general planning policies for the area (international, national, and local);"),
+                              tags$li("Any other legitimate use of the sea.")),
+                      style = "info"),
+                    #_______________________________________________________________________________
+                    ## EVALUATION OF IMPACTS ##
+                    bsCollapsePanel(
+                      ## Title
+                      "Evaluation of impacts", 
+                      ## Text
+                      "When evaluating the overall impact, it is necessary to identify and quantify the marine and coastal environmental consequences of the proposal. The EIA should evaluate the extent to which the proposed extraction operation is likely to affect other interests of acknowledged importance. Consideration should also be given to the assessment of the potential for cumulative impacts on the marine environment. In this context, cumulative impacts might occur as a result of aggregate dredging at a single site over time, from multiple sites in close proximity, or in combination with effects from other human activities (e.g., fishing and disposal of harbour dredgings).", br(), br(),
+                      "It is recommended that a risk assessment be undertaken. This should include consideration of worst-case scenarios, and indicate uncertainties and assumptions used in their evaluation.", br(), br(),
+                      "The environmental consequences should be summarised as an impact hypothesis. The assessment of some of the potential impacts requires predictive techniques, and it will be necessary to use appropriate mathematical models. Where such models are used, there should be sufficient explanation of the nature of the model, including its data requirements, its limitations and any assumptions made in the calculations, to enable assessment of its suitability for the particular modelling exercise.", br(), br(),
+                      style = "info"),
+                    #_______________________________________________________________________________
+                    ## MITIGATION MEASURES ##
+                    bsCollapsePanel(
+                      ## Title
+                      "Mitigation measures",
+                      ## Text
+                      "The impact hypothesis should include consideration of the steps that might be taken to mitigate the effects of extraction activities. These may include: ", br(),br(),
+                      ## Bullets
+                      tags$ul(tags$li("the selection of aggregate dredging equipment and timing of aggregate dredging operations to limit impact upon the biota (such as birds, benthic communities, any particularly sensitive species and habitats, and fish resources);"),
+                              tags$li("modification of the depth and design of aggregate dredging operations to limit changes to hydrodynamics and sediment transport and to minimise the effects on fishing;"),
+                              tags$li("spatial and temporal zoning of the area to be authorised for extraction or scheduling extraction to protect sensitive fisheries or to respect access to traditional fisheries;"),
+                              tags$li("preventing on-board screening or minimising material passing through spillways when outside the dredging area to reduce the spread of the sediment plume;"),
+                              tags$li(" agreeing exclusion areas to provide refuges for important habitats or species, or other sensitive areas.")),
+                      ## Text
+                      "Evaluation of the potential impacts of the aggregate dredging proposal, taking into account any mitigating measures, should enable a decision to be taken on whether or not the application should proceed. In some cases it will be appropriate to monitor certain effects as the aggregate dredging proceeds. The EIA should form the basis for the monitoring plan. ", br(),br(),
+                      style = "info"),
+                    #_______________________________________________________________________________
+                    ## AUTHORISATION ISSUE ##
+                    bsCollapsePanel(
+                      ## Title
+                      "Authorisation issue",
+                      ## Text
+                      "When an aggregate extraction operation is approved, then an authorisation should be issued in advance (which may take the form of a permit, licence or other form of regulatory approval). In granting an authorisation, the immediate impact of aggregate extraction occurring within the boundaries of the extraction site, such as alterations to the local physical and biological environment, is accepted by the regulatory authority. Notwithstanding these consequences, the conditions under which an authorisation for aggregate extraction is issued should be such that environmental change beyond the boundaries of the extraction site are as far below the limits of allowable environmental change as practicable. The operation should be authorised subject to conditions which further ensure that environmental disturbance and detriment are minimised.", br(),br(),
+                      "he authorisation is an important tool for managing aggregate extraction and will contain the terms and conditions under which aggregate extraction may take place, as well as provide a framework for assessing and ensuring compliance.",br(),br(),
+                      "Authorisation conditions should be drafted in plain and unambiguous language and will be designed to ensure that:",br(),br(),
+                      tags$ul(
+                        tags$p("a) the material is only extracted from within the selected extraction site;"),
+                        tags$p("b) any mitigation requirements are complied with; and "),
+                        tags$p("c) any monitoring requirements are fulfilled and the results reported to the regulatory authority.")),
+                      style = "info"),
+                    #_______________________________________________________________________________
+                    ## MONITORING COMPLIANCE WITH CONDITIONS ATTACHED TO THE AUTHORISATION ##
+                    bsCollapsePanel(
+                      ## Title
+                      "Monitoring compliance with conditions attached to the authorisation", 
+                      ## Text
+                      "An essential requirement for the effective control of marine aggregate extraction is the monitoring of dredging activities to ensure conformity with the authorisation requirements. This has been achieved in several ways, e.g., an Electronic Monitoring System or Black Box. The information provided will allow the regulatory authority to monitor the activities of aggregate dredging vessels to ensure compliance with particular conditions in the authorisation.",br(),br(),
+                      "The information collected and stored will depend on the requirements of the individual authorities and the regulatory regime under which the permission is granted, e.g., EIA, Habitats, Birds Directives of the EU. ",br(),br(),
+                      "The minimum requirements for the monitoring system should include:",br(),br(),
+                      ## Bullets
+                      tags$ul(
+                        tags$li("an automatic record of the date, time and position of all aggregate dredging activity;"),
+                        tags$li(" position to be recorded to within a minimum of 100 metres in latitude and longitude or other agreed coordinates using a satellite-based navigation system;"),
+                        tags$li("there should be an appropriate level of security;"),
+                        tags$li("the frequency of recording of position should be appropriate to the status of the vessel, i.e., less frequent records when the vessel is in harbour or in transit to the aggregate dredging area e.g., every 30 minutes, and more frequently when dredging, e.g., every 30 seconds.")),
+                      ## Text
+                      "The above are considered to be reasonable minimum requirements to enable the regulatory authority to monitor the operation of the authorisation in accordance with any conditions attached. Individual countries may require additional information for compliance monitoring at their own discretion.",br(),br(),
+                      "The records can also be used by the aggregate dredging company to improve utilisation of the resources. The information is also an essential input into the design and development of appropriate environmental monitoring programmes and research into the physical and biological effects of aggregate dredging, including combined/cumulative impacts (see section above).",br(),br(),
+                      style = "info"),
+                    #_______________________________________________________________________________
+                    ## ENVIRONMENTAL MONITORING ##
+                    bsCollapsePanel(
+                      ## Title
+                      "Environmental monitoring",
+                      ## Text
+                      "Sand and gravel extraction inevitably disturbs the marine environment. The extent of the disturbance and its environmental significance will depend on a number of factors. In many cases, it will not be possible to predict, in full, the environmental effects at the outset, and a programme of monitoring may be needed to demonstrate the validity of the EIA’s predictions, the effectiveness of any conditions imposed on the authorisation, and therefore the absence of unacceptable impacts on the marine environment.",br(),br(),
+                      "The level of monitoring should depend on the relative importance and sensitivity of the surrounding area. Monitoring requirements should be site-specific, and should be based, wherever possible, on the findings of the EIA. To be cost-effective, monitoring programmes should have clearly defined objectives derived from the impact hypothesis developed during the EIA process. The results should be reviewed at regular intervals against the stated objectives, and the monitoring exercise should then be continued, revised, or even terminated.",br(),br(),
+                      "It is also important that the baseline and subsequent monitoring surveys take account of natural variability. This can be achieved by comparing the physical and biological status of the areas of interest with suitable reference sites located away from the influence of the aggregate dredging effects, and of other anthropogenic disturbance. Suitable locations should be identified as part of the EIA’s impact hypothesis.",br(),br(),
+                      "A monitoring programme may include assessment of a number of effects. When developing the programme, a number of questions should be addressed, including:",br(),br(),
+                      ## Bullets
+                      tags$ul(tags$li("What are the environmental concerns that the monitoring programme seeks to address?"),
+                              tags$li("What measurements are necessary to identify the significance of a particular effect?"),
+                              tags$li("What are the most appropriate locations at which to take samples or observations for assessment?"),
+                              tags$li("How many measurements are required to produce a statistically sound programme?"),
+                              tags$li("What is the appropriate frequency and duration of monitoring?")),
+                      ## Text
+                      "The regulatory authority is encouraged to take account of relevant research information in the design and modification of monitoring programmes.",br(),br(),
+                      "The spatial extent of sampling should take account of the area designated for extraction and areas outside which may be affected. In some cases, it may be appropriate to monitor more distant locations where there is some question about a predicted nil effect. The frequency and duration of monitoring may depend upon the scale of the extraction activities and the anticipated period of consequential environmental changes, which may extend beyond the cessation of extraction activities.",br(),br(),
+                      "Information gained from field monitoring (or related research studies) should be used to amend or revoke the authorisation, or refine the basis on which the aggregate extraction operation is assessed and managed. As information on the effects of marine aggregate dredging becomes more available and a better understanding of impacts is gained, it may be possible to revise the monitoring necessary. It is therefore in the interest of all concerned that monitoring data are made widely available. Reports should detail the measurements made, results obtained, their interpretation, and how these data relate to the monitoring objectives.",br(),br(),
+                      style = "info"),
+                    #_______________________________________________________________________________
+                    ## REPORTING FRAMEWORK ##
+                    bsCollapsePanel(
+                      ## Title
+                      "Reporting Framework", 
+                      ## Text
+                      "It is recommended that the national statistics on aggregate dredging activity continue to be collated annually by the ICES Working Group on the Effects of Extraction of Marine Sediments on the Marine Ecosystem (WGEXT).", 
+                      style = "info"),
+                    #_______________________________________________________________________________
+                    ## DEFINITIONS ##
+                    bsCollapsePanel(
+                      ## Title
+                      "Definitions",
+                      ## Text
+                      "In these Guideline, “marine sediment extraction” is intended to refer to the extraction of marine sands and gravels (or “aggregates”) from the seabed for use in the construction industry (where they often directly replace materials extracted from land-based sources), and for use in flood and coastal defence, beach replenishment, fill and land reclamation projects. It is recognised that other materials are also extracted from the seabed, such as stone, shell materials, and maerl, and similar considerations to those set out in the Guidelines should also apply to them. The Guidelines do not apply to navigational dredging (e.g., maintenance or capital dredging operations).", br(),br(),
+                      "In these Guidelines, the term “authorisation” is used in preference to “permit” or “license” and is intended to replace both terms. The legal regime under which marine extraction operations are authorized and regulated differs from country to country, and the terms permit and license may have a specific connotation within national legal regimes, and also under rules of international law. The term “authorisation” is thus used to mean any use of permits, licenses, or other forms of regulatory approval.", br(),br(),
+                      "The ecosystem approach will be elaborated by further work in both OSPAR and ICES. The following definition has been used elsewhere “the comprehensive integrated management of human activities based on best available scientific knowledge about the ecosystem and its dynamics, in order to identify and take action on influences which are critical to the health of marine ecosystems, thereby achieving sustainable use of ecosystem goods and services and maintenance of ecosystem integrity.”", br(),br(),
+                      style = "info"),
+                    #_______________________________________________________________________________
+                    ## REVISION OF GUIDELINES ##
+                    bsCollapsePanel(
+                      ## Title
+                      "Revision of Guidelines", 
+                      ## Text
+                      "WGEXT will continue to review any new information, conclusions, and understandings from scientific research projects, any reports from countries on their experiences with the implementation of the Guidelines and, where appropriate, will revise the Guidelines accordingly.", 
+                      style = "info")
+                    #_______________________________________________________________________________
+                  )
+         ),
+         #tabPanel("Revisions Log", "Content for tab 2")
+         tabPanel("Revisions Log", tableOutput("mtcars_kable"))
+       )
+     )
+#   )
+# )           
+              
+################################################################################
       )#tabitem 'publications' end
       #____________________________________________
     )#tabItems end
@@ -536,6 +913,7 @@ Your access to and use of the content available on this app is entirely at your 
 )#dashboardPage close
 
 
+#_______________________________________________________________________________
 
 server <- function(input, output) {
   set.seed(122)
@@ -1138,7 +1516,23 @@ server <- function(input, output) {
     
   )
   #__________________________________________________________________________________________
+  #### GUIDELINES TABLE UPDATES ####
+  ## Create guidelines update table 
+  pred_var <- data.frame(
+    Section=c(""),
+    Change=c("Guidelines digitised and uploaded to dashboard"),
+    Date=c("March 2025"),
+    Version=c('1.0'))
   
+  
+  ## Create Revisions Log table using kable 
+  output$mtcars_kable <- function() {
+    pred_var %>%
+      knitr::kable("html") %>%
+      kable_styling("striped", full_width = T)
+    #__________________________________________________________________________________________
+    
+  }
   
   
 }
