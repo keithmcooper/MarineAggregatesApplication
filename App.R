@@ -572,10 +572,10 @@ Your access to and use of the content available on this app is entirely at your 
                 
                 valueBox(numberofreports, "Reports",color = "light-blue", icon = icon("newspaper")),
                
-                valueBox(numberofphds, "PhD", color = "light-blue",icon = icon("graduation-cap")),
+                valueBox(numberofphds, "PhDs", color = "light-blue",icon = icon("graduation-cap")),
                 
-                valueBox(numberofbooks, "Book", color = "light-blue",icon = icon("book")),
-                valueBox(numberofwebsites, "Website", color = "light-blue",icon = icon("globe"))
+                valueBox(numberofbooks, "Books", color = "light-blue",icon = icon("book")),
+                valueBox(numberofwebsites, "Websites", color = "light-blue",icon = icon("globe"))
                 
               ),
               box(
