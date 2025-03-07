@@ -565,6 +565,7 @@ Your access to and use of the content available on this app is entirely at your 
       ),##tabitem 'dashboard' close
       #____________________________________________
       # Second tab content
+      
       tabItem(tabName = "publications",
               fluidRow(
                 
