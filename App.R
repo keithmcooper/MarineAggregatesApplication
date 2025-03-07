@@ -294,6 +294,7 @@ publications = dbGetQuery(pool,
                               p.url,
                               p.year,
                               p.country_countryname,
+                              p.pub_type,
                               pt.tag_name
                               
                           FROM
@@ -318,6 +319,24 @@ colnames(management)[1] <- 'Country'
 guidelines = dbGetQuery(pool,
                         "select * from management.guidelines;")
 guidelines <- guidelines[,2:3]
+#__________________________________________________________________________________________
+#__________________________________________________________________________________________
+#### NUMBER OF PAPERS ####
+
+numberofpapers = dbGetQuery(pool,"SELECT COUNT(pub_type) FROM publications.publication where pub_type = 'paper';")
+numberofpapers <- as.numeric(as.character(numberofpapers$count))
+#__________________________________________________________________________________________
+#### Number of REPORTS ####
+numberofreports = dbGetQuery(pool,"SELECT COUNT(pub_type_peer) FROM publications.publication where pub_type = 'report';")
+numberofreports <- as.numeric(as.character(numberofreports$count))
+#__________________________________________________________________________________________
+#### Number of PHDs ####
+numberofphds = dbGetQuery(pool,"SELECT COUNT(pub_type_peer) FROM publications.publication where pub_type = 'phd';")
+numberofphds <- as.numeric(as.character(numberofphds$count))
+#__________________________________________________________________________________________
+#### Number of BOOKS ####
+numberofbooks = dbGetQuery(pool,"SELECT COUNT(pub_type_peer) FROM publications.publication where pub_type = 'book';")
+numberofbooks <- as.numeric(as.character(numberofbooks$count))
 #__________________________________________________________________________________________
 ## app.R ##
 library(shinydashboard)
@@ -348,7 +367,7 @@ ui <- dashboardPage(
         .sidebar img {
           position: absolute;
           bottom: 75px;
-          left: 50%;
+          left: 40%;
           transform: translateX(-50%);
         }
       "))
@@ -543,8 +562,30 @@ Your access to and use of the content available on this app is entirely at your 
       #____________________________________________
       # Second tab content
       tabItem(tabName = "publications",
-              h2("Papers"),
-              DT::dataTableOutput("mytable")
+              fluidRow(
+                
+                
+                valueBox(numberofpapers, "Papers", icon = icon("file-alt")),
+                
+                valueBox(numberofreports, "Reports", icon = icon("newspaper")),
+               
+                valueBox(numberofphds, "PhD", icon = icon("graduation-cap")),
+                
+                valueBox(numberofbooks, "Book", icon = icon("book"))
+
+              ),
+              box(
+                width = 12,
+                
+                tabBox(
+                  tabPanel("Papers",
+              DT::dataTableOutput("mytable")),
+              tabPanel("Reports",
+                       DT::dataTableOutput("mytable_report")),
+              tabPanel("PhD"),
+              tabPanel("Book")
+                )
+              )
       ),#tabitem 'publications' end
       #____________________________________________
       
@@ -1461,14 +1502,23 @@ server <- function(input, output) {
     #publications2 <- subset( publication,country_countryname %in% input$country2Input)
     publication2 <- subset( publications,tag_name %in% input$subjectInput)
     
-    publication3 <- unique(publication2[,1:5])
+    publication3 <- unique(publication2[,1:6])
     return( publication3)
   })
   
   
-  ## Publications table
+  ## Publications table: papers
   output$mytable = DT::renderDataTable(
-    publications_sel(),
+    publications_sel() %>%
+      filter(pub_type == "paper"),
+    options = list(pageLength = 10, lengthChange = FALSE),
+    rownames= FALSE
+  )
+  
+  ## Publications table:report
+  output$mytable_report = DT::renderDataTable(
+    publications_sel() %>%
+      filter(pub_type == "report"),
     options = list(pageLength = 10, lengthChange = FALSE),
     rownames= FALSE
   )
@@ -1531,7 +1581,8 @@ server <- function(input, output) {
       knitr::kable("html") %>%
       kable_styling("striped", full_width = T)
     #__________________________________________________________________________________________
-    
+
+    #_________________________________________________________________________________________
   }
   
   
