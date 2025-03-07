@@ -564,7 +564,6 @@ Your access to and use of the content available on this app is entirely at your 
       tabItem(tabName = "publications",
               fluidRow(
                 
-                
                 valueBox(numberofpapers, "Papers", icon = icon("file-alt")),
                 
                 valueBox(numberofreports, "Reports", icon = icon("newspaper")),
