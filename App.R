@@ -327,16 +327,20 @@ numberofpapers = dbGetQuery(pool,"SELECT COUNT(pub_type) FROM publications.publi
 numberofpapers <- as.numeric(as.character(numberofpapers$count))
 #__________________________________________________________________________________________
 #### Number of REPORTS ####
-numberofreports = dbGetQuery(pool,"SELECT COUNT(pub_type_peer) FROM publications.publication where pub_type = 'report';")
+numberofreports = dbGetQuery(pool,"SELECT COUNT(pub_type) FROM publications.publication where pub_type = 'report';")
 numberofreports <- as.numeric(as.character(numberofreports$count))
 #__________________________________________________________________________________________
 #### Number of PHDs ####
-numberofphds = dbGetQuery(pool,"SELECT COUNT(pub_type_peer) FROM publications.publication where pub_type = 'phd';")
+numberofphds = dbGetQuery(pool,"SELECT COUNT(pub_type) FROM publications.publication where pub_type = 'phd';")
 numberofphds <- as.numeric(as.character(numberofphds$count))
 #__________________________________________________________________________________________
 #### Number of BOOKS ####
-numberofbooks = dbGetQuery(pool,"SELECT COUNT(pub_type_peer) FROM publications.publication where pub_type = 'book';")
+numberofbooks = dbGetQuery(pool,"SELECT COUNT(pub_type) FROM publications.publication where pub_type = 'book';")
 numberofbooks <- as.numeric(as.character(numberofbooks$count))
+#__________________________________________________________________________________________
+#### Number of Websites ####
+numberofwebsites = dbGetQuery(pool,"SELECT COUNT(pub_type) FROM publications.publication where pub_type = 'website';")
+numberofwebsites <- as.numeric(as.character(numberofwebsites$count))
 #__________________________________________________________________________________________
 ## app.R ##
 library(shinydashboard)
@@ -564,25 +568,32 @@ Your access to and use of the content available on this app is entirely at your 
       tabItem(tabName = "publications",
               fluidRow(
                 
-                valueBox(numberofpapers, "Papers", icon = icon("file-alt")),
+                valueBox(numberofpapers, "Papers", color = "light-blue",icon = icon("file-alt")),
                 
-                valueBox(numberofreports, "Reports", icon = icon("newspaper")),
+                valueBox(numberofreports, "Reports",color = "light-blue", icon = icon("newspaper")),
                
-                valueBox(numberofphds, "PhD", icon = icon("graduation-cap")),
+                valueBox(numberofphds, "PhD", color = "light-blue",icon = icon("graduation-cap")),
                 
-                valueBox(numberofbooks, "Book", icon = icon("book"))
-
+                valueBox(numberofbooks, "Book", color = "light-blue",icon = icon("book")),
+                valueBox(numberofwebsites, "Website", color = "light-blue",icon = icon("globe"))
+                
               ),
               box(
                 width = 12,
                 
                 tabBox(
+                  width = 12,
                   tabPanel("Papers",
-              DT::dataTableOutput("mytable")),
+                           
+                           DT::dataTableOutput("mytable")),
               tabPanel("Reports",
                        DT::dataTableOutput("mytable_report")),
-              tabPanel("PhD"),
-              tabPanel("Book")
+              tabPanel("PhD",
+                       DT::dataTableOutput("mytable_phd")),
+              tabPanel("Book",
+                       DT::dataTableOutput("mytable_book")),
+              tabPanel("Website",
+                       DT::dataTableOutput("mytable_website"))
                 )
               )
       ),#tabitem 'publications' end
@@ -613,6 +624,7 @@ Your access to and use of the content available on this app is entirely at your 
        title = "ICES Guidelines for the Management of Marine Sediment Extraction",
        width = 12,
        tabBox(
+
          id = "tabset1",
          # Title can include an icon
          #title = tagList(shiny::icon("gear"), "Version: 1.0"),
@@ -626,6 +638,7 @@ Your access to and use of the content available on this app is entirely at your 
                     #_______________________________________________________________________________
                     ## INTRODUCTION ##
                     bsCollapsePanel(
+
                       ## Title                      
                       "Introduction", 
                       ## Text
@@ -1509,16 +1522,51 @@ server <- function(input, output) {
   ## Publications table: papers
   output$mytable = DT::renderDataTable(
     publications_sel() %>%
-      filter(pub_type == "paper"),
-    options = list(pageLength = 10, lengthChange = FALSE),
+      filter(pub_type == "paper")%>% arrange(desc(Year))%>% select(2),
+    #options = list(pageLength = 10, lengthChange = FALSE),
+    ## Remove col header
+    options = list(
+      pageLength = 10,
+      lengthChange = FALSE,
+      headerCallback = JS("function(thead, data, start, end, display){ $(thead).remove(); }")),
     rownames= FALSE
   )
   
   ## Publications table:report
   output$mytable_report = DT::renderDataTable(
     publications_sel() %>%
-      filter(pub_type == "report"),
-    options = list(pageLength = 10, lengthChange = FALSE),
+      filter(pub_type == "report")%>% arrange(desc(Year))%>% select(2),
+    #options = list(pageLength = 10, lengthChange = FALSE),
+    ## Remove col header
+    options = list(
+      pageLength = 10,
+      lengthChange = FALSE,
+      headerCallback = JS("function(thead, data, start, end, display){ $(thead).remove(); }")),
+    rownames= FALSE
+  )
+  
+  ## Publications table:PhD
+  output$mytable_phd = DT::renderDataTable(
+    publications_sel() %>%
+      filter(pub_type == "phd")%>% arrange(desc(Year))%>% select(2),
+    #options = list(pageLength = 10, lengthChange = FALSE),
+    ## Remove col header
+    options = list(
+      pageLength = 10,
+      lengthChange = FALSE,
+      headerCallback = JS("function(thead, data, start, end, display){ $(thead).remove(); }")),
+    rownames= FALSE
+  )
+  ## Publications table:website
+  output$mytable_website = DT::renderDataTable(
+    publications_sel() %>%
+      filter(pub_type == "website")%>% arrange(desc(Year))%>% select(2),
+    #options = list(pageLength = 10, lengthChange = FALSE),
+    ## Remove col header
+    options = list(
+      pageLength = 10,
+      lengthChange = FALSE,
+      headerCallback = JS("function(thead, data, start, end, display){ $(thead).remove(); }")),
     rownames= FALSE
   )
   #__________________________________________________________________________________________
