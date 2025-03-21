@@ -311,8 +311,8 @@ colnames(publications)[5] <- 'Country'
 #__________________________________________________________________________________________
 ## Management
 management = dbGetQuery(pool,
-                        "select * from management.management;")
-management <- management[,2:4]
+                        "select * from management.management order by country_countryname asc;")
+management <- management[,2:5]
 colnames(management)[1] <- 'Country'
 #__________________________________________________________________________________________
 ## Guidelines
@@ -429,16 +429,16 @@ ui <- dashboardPage(
       
       
       #_______________________________________________
- #     menuItem("Management", tabName = "management", icon = icon("list-check")),
- #     conditionalPanel(
- #       "input.tabs == 'management'",
+      menuItem("Management", tabName = "management", icon = icon("list-check")),
+      conditionalPanel(
+        "input.tabs == 'management'",
         #____________________________________________
         
- #       selectInput(inputId="country2Input", multiple = T,h4("Select Country",style="color:white"),choices = c("",as.character(unique(management$Country)))),#country_countryname
- #       selectInput(inputId="elementInput", multiple = F,h4("Select element",style="color:white"),choices = c("",as.character(unique(management$element))))
+        #selectInput(inputId="country2Input", multiple = T,h4("Select Country",style="color:white"),choices = c("",as.character(unique(management$Country)))),#country_countryname
+        selectInput(inputId="questionInput", multiple = F,h4("Select question",style="color:white"),choices = c("",as.character(unique(management$question))),selected = as.character(unique(management$question))[1] ) # Default to the first question
         
         #____________________________________________
-  #    ),
+      ),
       #____________________________________________
       menuItem("Guidelines", tabName = "guidelines", icon = icon("book")),
       #______________________________________________
@@ -602,13 +602,22 @@ Your access to and use of the content available on this app is entirely at your 
       #____________________________________________
       
       # Second tab content
-#      tabItem(tabName = "management",
+      tabItem(tabName = "management",
               #h2("Management: ", textOutput("selected_element")),
- #             h2("Management: "),
- #             DT::dataTableOutput("managementtable")
+              #h2(),
+             # verbatimTextOutput("selected_question"),
+              h2(textOutput("selected_question")),
               #h2("Guidelines"),
-              #DT::dataTableOutput("guidelinestable")
- #     ),#tabitem 'publications' end
+             br(),
+             textOutput("guidelinestable"),
+              #DT::dataTableOutput("guidelinestable"),
+             br(),
+             br(),
+             
+              # h3("National Approaches "),
+              DT::dataTableOutput("managementtable")
+              
+      ),#tabitem 'publications' end
       #____________________________________________
       # Second tab content
       tabItem(tabName = "guidelines",
@@ -1577,29 +1586,36 @@ server <- function(input, output) {
     
     
     #management2 <- subset( management,country_countryname %in% input$country2Input)
-    management2 <- subset( management,Country %in% input$country2Input)
-    management3 <- subset( management2,element %in% input$elementInput)
-    
+    #management2 <- subset( management,Country %in% input$country2Input)
+    #management3 <- subset( management2,question %in% input$questionInput)
+    management3 <- subset( management,question %in% input$questionInput)
     return(management3)
   })
   
   ## Management table
   output$managementtable = DT::renderDataTable(
     #management
-    management_sel(),
-    options = list(pageLength = 10, lengthChange = FALSE),
+    management_sel()[,c(1,4)],
+    
+## Remove table headers
+    options = list(
+      pageLength = 10,
+      lengthChange = FALSE,
+      searching = FALSE,  # Removes the search box
+      headerCallback = JS("function(thead, data, start, end, display){ $(thead).remove(); }")),
     rownames= FALSE
+
   )
   
   output$selected_element <- renderText({
-    paste( input$elementInput)
+    paste( input$questionInput)
   })
   #__________________________________________________________________________________________
   guidelines_sel <- reactive({
     
     
     #management2 <- subset( management,country_countryname %in% 'United Kingdom')
-    guidelines2 <- subset( guidelines,element %in% input$elementInput)
+    guidelines2 <- subset( guidelines,question %in% input$questionInput)
     guidelines3 <- as.data.frame(guidelines2[,2])
     colnames(guidelines3)[1] <- 'Advice'
     
@@ -1607,13 +1623,23 @@ server <- function(input, output) {
   })
   
   ## Management table
-  output$guidelinestable = DT::renderDataTable(
-    #management
-    guidelines_sel(), 
-    options = list(dom = 't',pageLength = 1, lengthChange = FALSE),
-    rownames= FALSE
-    
-  )
+  output$guidelinestable = 
+    renderText({
+      paste( guidelines_sel())#"You have chosen:",
+    })  
+#    DT::renderDataTable(
+#    guidelines_sel(), 
+#    options = list(
+#      stripe = FALSE,
+#      pageLength = 10,
+#      lengthChange = FALSE,
+#      searching = FALSE,  # Removes the search box
+#      style="bootstrap",
+#      dom = 't',  # Removes table controls (search box, pagination, etc.)
+     
+#headerCallback = JS("function(thead, data, start, end, display){ $(thead).remove(); }") ),
+#rownames = FALSE,
+#)
   #__________________________________________________________________________________________
   #### GUIDELINES TABLE UPDATES ####
   ## Create guidelines update table 
@@ -1634,7 +1660,10 @@ server <- function(input, output) {
     #_________________________________________________________________________________________
   }
   
-  
+  ## Repeat of question on main body
+  output$selected_question <- renderText({
+    paste( input$questionInput)#"You have chosen:",
+  })
 }
 
 shinyApp(ui, server)
