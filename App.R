@@ -1540,7 +1540,8 @@ server <- function(input, output) {
       pageLength = 10,
       lengthChange = FALSE,
       headerCallback = JS("function(thead, data, start, end, display){ $(thead).remove(); }")),
-    rownames= FALSE
+    rownames= FALSE,
+    escape = FALSE
   )
   
   ## Publications table:report
@@ -1553,7 +1554,8 @@ server <- function(input, output) {
       pageLength = 10,
       lengthChange = FALSE,
       headerCallback = JS("function(thead, data, start, end, display){ $(thead).remove(); }")),
-    rownames= FALSE
+    rownames= FALSE,
+    escape = FALSE
   )
   
   ## Publications table:PhD
@@ -1566,7 +1568,8 @@ server <- function(input, output) {
       pageLength = 10,
       lengthChange = FALSE,
       headerCallback = JS("function(thead, data, start, end, display){ $(thead).remove(); }")),
-    rownames= FALSE
+    rownames= FALSE,
+    escape = FALSE
   )
   ## Publications table:website
   output$mytable_website = DT::renderDataTable(
@@ -1578,7 +1581,8 @@ server <- function(input, output) {
       pageLength = 10,
       lengthChange = FALSE,
       headerCallback = JS("function(thead, data, start, end, display){ $(thead).remove(); }")),
-    rownames= FALSE
+    rownames= FALSE,
+    escape = FALSE
   )
   #__________________________________________________________________________________________
   management_sel <- reactive({
@@ -1603,7 +1607,8 @@ server <- function(input, output) {
       lengthChange = FALSE,
       searching = FALSE,  # Removes the search box
       headerCallback = JS("function(thead, data, start, end, display){ $(thead).remove(); }")),
-    rownames= FALSE
+    rownames= FALSE,
+    escape = FALSE
 
   )
   
