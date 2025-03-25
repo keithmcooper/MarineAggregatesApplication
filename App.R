@@ -322,7 +322,6 @@ management$question[management$question == "What systems are used for tracking d
 guidelines = dbGetQuery(pool,
                         "select * from management.guidelines;")
 guidelines <- guidelines[,2:3]
-View(guidelines)
 guidelines$question[guidelines$question == "Have you mapped aggregate resources in your country?"] <- "Aggregate resources mapped?"
 guidelines$question[guidelines$question == "Does your country have a strategy for sustainable use of aggregate resources?"] <- "Strategy for sustainable use of aggregate resources?"
 guidelines$question[guidelines$question == "What systems are used for tracking dredging activity?"] <- "System used for tracking dredging activity?"
@@ -435,7 +434,13 @@ ui <- dashboardPage(
       #menuItem("Publications", tabName = "publications", icon = icon("book")),
       
       
-      #_______________________________________________
+  
+      #____________________________________________
+      menuItem("Guidelines", tabName = "guidelines", icon = icon("book")),
+      #______________________________________________
+      # menuItem("Management", tabName = "management", icon = icon("list-check")),
+      
+          #_______________________________________________
       menuItem("Management", tabName = "management", icon = icon("list-check")),
       conditionalPanel(
         "input.tabs == 'management'",
@@ -446,15 +451,9 @@ ui <- dashboardPage(
         
         #____________________________________________
       ),
+      
       #____________________________________________
-      menuItem("Guidelines", tabName = "guidelines", icon = icon("book")),
-      #______________________________________________
-      # menuItem("Management", tabName = "management", icon = icon("list-check")),
-      
-      
-      
-      
-      
+      menuItem("Blog", tabName = "blog", icon = icon("book")),
       
       
       ############
@@ -555,13 +554,11 @@ Your access to and use of the content available on this app is entirely at your 
                                                div(formattableOutput("spat_dredged"),style = 'font-size:58%'))),
                                   tabPanel("Total Area Licensed (km2)",
                                            div(style = 'overflow-y:scroll;height:380px;',# add vertical scrollbar
-                                               div(formattableOutput("tot_area_lic"),style = 'font-size:58%') )),
+                                               div(formattableOutput("tot_area_lic"),style = 'font-size:58%'))),
                                   tabPanel("Total Area Footprint (km2)",
                                            div(style = 'overflow-y:scroll;height:380px;',# add vertical scrollbar
-                                               div(formattableOutput("tot_area_dredged"),style = 'font-size:58%'
-                                               )
-                                           )
-                                  )
+                                               div(formattableOutput("tot_area_dredged"),style = 'font-size:58%'))),
+                                  
                                 )#tabsetPanel close
                        )# tabPanel close 'Spatial Data Availability'
                        
@@ -971,9 +968,14 @@ Your access to and use of the content available on this app is entirely at your 
      )
 #   )
 # )           
-              
+
 ################################################################################
-      )#tabitem 'publications' end
+      ),#tabitem 'publications' end
+######################
+tabItem( tabName = "blog",
+         h2("Blog Page"),
+         p("Welcome to the blog page! Here you can add your blog content.")
+)
       #____________________________________________
     )#tabItems end
     #____________________________________________
