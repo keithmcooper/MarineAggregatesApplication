@@ -314,11 +314,18 @@ management = dbGetQuery(pool,
                         "select * from management.management order by country_countryname asc;")
 management <- management[,2:5]
 colnames(management)[1] <- 'Country'
+management$question[management$question == "Have you mapped aggregate resources in your country?"] <- "Aggregate resources mapped?"
+management$question[management$question == "Does your country have a strategy for sustainable use of aggregate resources?"] <- "Strategy for sustainable use of aggregate resources?"
+management$question[management$question == "What systems are used for tracking dredging activity?"] <- "System used for tracking dredging activity?"
 #__________________________________________________________________________________________
 ## Guidelines
 guidelines = dbGetQuery(pool,
                         "select * from management.guidelines;")
 guidelines <- guidelines[,2:3]
+View(guidelines)
+guidelines$question[guidelines$question == "Have you mapped aggregate resources in your country?"] <- "Aggregate resources mapped?"
+guidelines$question[guidelines$question == "Does your country have a strategy for sustainable use of aggregate resources?"] <- "Strategy for sustainable use of aggregate resources?"
+guidelines$question[guidelines$question == "What systems are used for tracking dredging activity?"] <- "System used for tracking dredging activity?"
 #__________________________________________________________________________________________
 #__________________________________________________________________________________________
 #### NUMBER OF PAPERS ####
@@ -1533,7 +1540,7 @@ server <- function(input, output) {
   ## Publications table: papers
   output$mytable = DT::renderDataTable(
     publications_sel() %>%
-      filter(pub_type == "paper")%>% arrange(desc(Year))%>% select(2),
+      filter(pub_type == "paper")%>% arrange(desc(Year))%>% select(2,3),
     #options = list(pageLength = 10, lengthChange = FALSE),
     ## Remove col header
     options = list(
@@ -1547,7 +1554,7 @@ server <- function(input, output) {
   ## Publications table:report
   output$mytable_report = DT::renderDataTable(
     publications_sel() %>%
-      filter(pub_type == "report")%>% arrange(desc(Year))%>% select(2),
+      filter(pub_type == "report")%>% arrange(desc(Year))%>% select(2,3),
     #options = list(pageLength = 10, lengthChange = FALSE),
     ## Remove col header
     options = list(
@@ -1561,7 +1568,7 @@ server <- function(input, output) {
   ## Publications table:PhD
   output$mytable_phd = DT::renderDataTable(
     publications_sel() %>%
-      filter(pub_type == "phd")%>% arrange(desc(Year))%>% select(2),
+      filter(pub_type == "phd")%>% arrange(desc(Year))%>% select(2,3),
     #options = list(pageLength = 10, lengthChange = FALSE),
     ## Remove col header
     options = list(
@@ -1574,7 +1581,7 @@ server <- function(input, output) {
   ## Publications table:website
   output$mytable_website = DT::renderDataTable(
     publications_sel() %>%
-      filter(pub_type == "website")%>% arrange(desc(Year))%>% select(2),
+      filter(pub_type == "website")%>% arrange(desc(Year))%>% select(2,3),
     #options = list(pageLength = 10, lengthChange = FALSE),
     ## Remove col header
     options = list(
