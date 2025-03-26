@@ -334,6 +334,8 @@ colnames(management)[1] <- 'Country'
 management$question[management$question == "Have you mapped aggregate resources in your country?"] <- "Aggregate resources mapped?"
 management$question[management$question == "Does your country have a strategy for sustainable use of aggregate resources?"] <- "Strategy for sustainable use of aggregate resources?"
 management$question[management$question == "What systems are used for tracking dredging activity?"] <- "System used for tracking dredging activity?"
+management$question[management$question == "Is an EIA (environmental impact report) required in your country?"] <- "Requirement for an Environmental Impact Assessment (EIA)?"
+
 #View(management)
 colnames(management)[4] <- 'Response'
 #__________________________________________________________________________________________
@@ -344,6 +346,7 @@ guidelines <- guidelines[,2:3]
 guidelines$question[guidelines$question == "Have you mapped aggregate resources in your country?"] <- "Aggregate resources mapped?"
 guidelines$question[guidelines$question == "Does your country have a strategy for sustainable use of aggregate resources?"] <- "Strategy for sustainable use of aggregate resources?"
 guidelines$question[guidelines$question == "What systems are used for tracking dredging activity?"] <- "System used for tracking dredging activity?"
+guidelines$question[guidelines$question == "Is an EIA (environmental impact report) required in your country?"] <- "Requirement for an Environmental Impact Assessment (EIA)?"
 #__________________________________________________________________________________________
 #__________________________________________________________________________________________
 #### NUMBER OF PAPERS ####
@@ -367,14 +370,14 @@ numberofbooks <- as.numeric(as.character(numberofbooks$count))
 numberofwebsites = dbGetQuery(pool,"SELECT COUNT(pub_type) FROM publications.publication where pub_type = 'website';")
 numberofwebsites <- as.numeric(as.character(numberofwebsites$count))
 #__________________________________________________________________________________________
+
 ## app.R ##
 library(shinydashboard)
 
 ui <- dashboardPage(
   #####
   ######
-  
-  
+
   
   #####
   #####
@@ -382,7 +385,7 @@ ui <- dashboardPage(
   #__________________________________________________________________________________________
   #### HEADER ####  
   #dashboardHeader(title=tags$b("WGEXT Dredging Stats Dashboard "),titleWidth = 400),#title = "OneBenthic dashboard"
-  dashboardHeader(title=tags$b("Marine Aggregates Dashboard "),titleWidth = 400),#title = "OneBenthic dashboard"
+  dashboardHeader(title=tags$b("Marine Aggregates Application (MAAP)"),titleWidth = 400),#title = "OneBenthic dashboard"
   #__________________________________________________________________________________________
   #### SIDEBAR ####
   dashboardSidebar(
@@ -503,6 +506,7 @@ ui <- dashboardPage(
   dashboardBody(
     
     modalDialog(
+      
       title = div(h4("Welcome to the ",tags$b("Marine Aggregates Application (MAAP)")," from ICES WGEXT"),style = "text-align: center;"),
       h4("What is ICES WGEXT?"),
       p("The Working Group on the Effects of Extraction of Marine Sediments on the Marine Ecosystem (",tags$a(href="https://www.ices.dk/community/groups/pages/wgext.aspx","WGEXT"),"),
@@ -520,7 +524,7 @@ ui <- dashboardPage(
       p(HTML("&nbsp;&nbsp;&nbsp;&nbsp;"),icon("fas fa-newspaper"),tags$b("Blog"), "- posts concerning topics of interest from annual WGEXT meetings."),
       br(),
       h4("Disclaimer"),
-      p("This app is made available for use on an as is and as available basis. No warranty is given in relation to the accuracy of the
+      p("This app is made available for use on an 'as is' and 'as available' basis. No warranty is given in relation to the accuracy of the
       content or in respect of its use for any particular purpose. Note the app is still in development and it's contents are
       incomplete (see",tags$a(href="https://sway.office.com/orIuJoHSruYfhy09?ref=Link","here")," for further information).
 Your access to and use of the content available on this app is entirely at your own risk. This work is licensed under",
@@ -692,7 +696,7 @@ Your access to and use of the content available on this app is entirely at your 
                       ## Title                      
                       "Introduction", 
                       ## Text
-                      "In many countries sand and gravel1 dredged from the seabed makes an important contribution to the national demand for aggregates, directly replacing materials extracted from land-based sources. This reduces the pressure to work land of agricultural importance or environmental and hydrological value, and where materials can be landed close to the point of use, there can be additional benefits of avoiding long distance over land transport. Marine dredged sand and gravel is also increasingly used in flood and coastal defence, fill and land reclamation schemes. For beach replenishment, marine materials are usually preferred from an amenity point of view, and are generally considered to be the most appropriate economically, technically and environmentally.",
+                      "In many countries sand and gravel dredged from the seabed makes an important contribution to the national demand for aggregates, directly replacing materials extracted from land-based sources. This reduces the pressure to work land of agricultural importance or environmental and hydrological value, and where materials can be landed close to the point of use, there can be additional benefits of avoiding long distance over land transport. Marine dredged sand and gravel is also increasingly used in flood and coastal defence, fill and land reclamation schemes. For beach replenishment, marine materials are usually preferred from an amenity point of view, and are generally considered to be the most appropriate economically, technically and environmentally.",
                       br(),br(),
                       "However, these benefits need to be balanced against the potential negative impacts of aggregate dredging. Aggregate dredging activity, if not carefully controlled, can cause significant damage to the seabed and its associated biota, to commercial fisheries and to the adjacent coastlines, as well as creating conflict with other users of the sea. In addition, current knowledge of the resource indicates that while there are extensive supplies of some types of marine sand, there appear to be more limited resources of gravel suitable, for example, to meet current concrete specifications and for beach nourishment." ,
                       br(),br(),
