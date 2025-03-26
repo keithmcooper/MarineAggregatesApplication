@@ -26,7 +26,24 @@ library(shinyBS)
 library(kableExtra)
 library(knitr)
 library(dplyr)
+#_______________________________________________________________________________
+## Load the blog content in your main app script:
+source("blog_content.R")
 
+## Create a function to render the blog posts:
+renderBlogPosts <- function(posts) {
+  lapply(posts, function(post) {
+    box(
+      title = post$title,
+      status = "primary",
+      solidHeader = TRUE,
+      width = 12,
+      p(strong("Date: "), post$date),
+      #p(post$content),
+      HTML(post$content)
+    )
+  })
+}
 #__________________________________________________________________________________________
 #### CREATE A CONNECTION TO DB wgext ####
 Sys.setenv(R_CONFIG_ACTIVE = "one_benthic")
@@ -317,6 +334,8 @@ colnames(management)[1] <- 'Country'
 management$question[management$question == "Have you mapped aggregate resources in your country?"] <- "Aggregate resources mapped?"
 management$question[management$question == "Does your country have a strategy for sustainable use of aggregate resources?"] <- "Strategy for sustainable use of aggregate resources?"
 management$question[management$question == "What systems are used for tracking dredging activity?"] <- "System used for tracking dredging activity?"
+#View(management)
+colnames(management)[4] <- 'Response'
 #__________________________________________________________________________________________
 ## Guidelines
 guidelines = dbGetQuery(pool,
@@ -362,8 +381,8 @@ ui <- dashboardPage(
   
   #__________________________________________________________________________________________
   #### HEADER ####  
-  dashboardHeader(title=tags$b("WGEXT Dredging Stats Dashboard "),titleWidth = 400),#title = "OneBenthic dashboard"
-  
+  #dashboardHeader(title=tags$b("WGEXT Dredging Stats Dashboard "),titleWidth = 400),#title = "OneBenthic dashboard"
+  dashboardHeader(title=tags$b("Marine Aggregates Dashboard "),titleWidth = 400),#title = "OneBenthic dashboard"
   #__________________________________________________________________________________________
   #### SIDEBAR ####
   dashboardSidebar(
@@ -451,9 +470,9 @@ ui <- dashboardPage(
         
         #____________________________________________
       ),
-      
+  
       #____________________________________________
-      menuItem("Blog", tabName = "blog", icon = icon("book")),
+      menuItem("Blog", tabName = "blog", icon = icon("fas fa-newspaper")),
       
       
       ############
@@ -484,13 +503,29 @@ ui <- dashboardPage(
   dashboardBody(
     
     modalDialog(
-      h4("This app is being developed by the",tags$a(href="https://www.ices.dk/community/groups/pages/wgext.aspx","ICES WGEXT"),
-         " and is made available for use on an as is and as available basis. No warranty is given in relation to the accuracy of the
+      title = div(h4("Welcome to the ",tags$b("Marine Aggregates Application (MAAP)")," from ICES WGEXT"),style = "text-align: center;"),
+      h4("What is ICES WGEXT?"),
+      p("The Working Group on the Effects of Extraction of Marine Sediments on the Marine Ecosystem (",tags$a(href="https://www.ices.dk/community/groups/pages/wgext.aspx","WGEXT"),"),
+        under the International Council for the Exploration of the Sea (",tags$a(href="https://www.ices.dk/Pages/default.aspx","ICES"),"), plays a crucial role in ensuring the sustainable management of marine sand and gravel extraction. 
+        WGEXT develops understanding and provides guidance on the environmental impacts of sediment extraction, including data collection, habitat mapping, and research on mitigation measures. 
+        The group also reviews national extraction activities, seabed resource mapping programs, and environmental impact assessments to support informed decision-making and policy development. 
+        Their work helps balance resource extraction with environmental protection, ensuring long-term sustainability."),
+      br(),
+      h4("App purpose"),
+      p("The Marine Aggregates Application is designed to promote the work of ICES WGEXT through the following pages:"),
+      p(HTML("&nbsp;&nbsp;&nbsp;&nbsp;"),icon("dashboard"),tags$b("Dashboard"), "- examine the location of aggregate dredging and quanitites involved."),
+      p(HTML("&nbsp;&nbsp;&nbsp;&nbsp;"),icon("binoculars"),tags$b("Publications"), "- explore the extensive database of research literature concerning marine aggregates."),
+      p(HTML("&nbsp;&nbsp;&nbsp;&nbsp;"),icon("book"),tags$b("Guidelines"), "- ICES guidelines for Management of Marine Sediment Extraction."),
+      p(HTML("&nbsp;&nbsp;&nbsp;&nbsp;"),icon("list-check"),tags$b("Management"), "- compare management practices in different ICES member states."),
+      p(HTML("&nbsp;&nbsp;&nbsp;&nbsp;"),icon("fas fa-newspaper"),tags$b("Blog"), "- posts concerning topics of interest from annual WGEXT meetings."),
+      br(),
+      h4("Disclaimer"),
+      p("This app is made available for use on an as is and as available basis. No warranty is given in relation to the accuracy of the
       content or in respect of its use for any particular purpose. Note the app is still in development and it's contents are
       incomplete (see",tags$a(href="https://sway.office.com/orIuJoHSruYfhy09?ref=Link","here")," for further information).
 Your access to and use of the content available on this app is entirely at your own risk. This work is licensed under",
          tags$a(href="https://creativecommons.org/licenses/by/4.0/?ref=chooser-v1","CC BY 4.0"),"."),
-      title = h4("Disclaimer"),
+      
       size = "l",
       easyClose = FALSE
     ),
@@ -619,7 +654,7 @@ Your access to and use of the content available on this app is entirely at your 
              br(),
              
               # h3("National Approaches "),
-              DT::dataTableOutput("managementtable")
+              box(title = "National picture",width = 12,DT::dataTableOutput("managementtable"))
               
       ),#tabitem 'publications' end
       #____________________________________________
@@ -974,7 +1009,8 @@ Your access to and use of the content available on this app is entirely at your 
 ######################
 tabItem( tabName = "blog",
          h2("Blog Page"),
-         p("Welcome to the blog page! Here you can add your blog content.")
+         uiOutput("blogPosts")
+         #p("Welcome to the blog page! Here you can add your blog content.")
 )
       #____________________________________________
     )#tabItems end
@@ -1013,6 +1049,9 @@ server <- function(input, output) {
     return(eez1)
   })
   #__________________________________________________________________________________________
+  output$blogPosts <- renderUI({
+    renderBlogPosts(blog_content)
+  })
   #__________________________________________________________________________________________ 
   #### BASELINE DATA SUBSET ####
   agg2 <- reactive({
@@ -1614,8 +1653,9 @@ server <- function(input, output) {
     options = list(
       pageLength = 10,
       lengthChange = FALSE,
-      searching = FALSE,  # Removes the search box
-      headerCallback = JS("function(thead, data, start, end, display){ $(thead).remove(); }")),
+      searching = FALSE#,  # Removes the search box
+      #headerCallback = JS("function(thead, data, start, end, display){ $(thead).remove(); }")# remove table column headers
+      ),
     rownames= FALSE,
     escape = FALSE
 
