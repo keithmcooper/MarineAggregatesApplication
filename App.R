@@ -1002,7 +1002,8 @@ Your access to and use of the content available on this app is entirely at your 
                   )
          ),
          #tabPanel("Revisions Log", "Content for tab 2")
-         tabPanel("Revisions Log", tableOutput("mtcars_kable"))
+         #tabPanel("Revisions Log", tableOutput("mtcars_kable"))
+         tabPanel("Revisions Log", dataTableOutput("mtcars_kable"))
        )
      )
 #   )
@@ -1703,20 +1704,25 @@ server <- function(input, output) {
   ## Create guidelines update table 
   pred_var <- data.frame(
     Section=c(""),
-    Change=c("Guidelines digitised and uploaded to dashboard"),
+    Change=c(paste("Existing ",tags$a(href="https://doi.org/10.17895/ices.pub.5398","Guidelines for the Management of Marine Sediment Extraction")," digitised and uploaded to MAAP")),
     Date=c("March 2025"),
     Version=c('1.0'))
   
+  # Convert the 'Change' column to HTML
+  pred_var$Change <- lapply(pred_var$Change, HTML)
   
   ## Create Revisions Log table using kable 
-  output$mtcars_kable <- function() {
-    pred_var %>%
-      knitr::kable("html") %>%
-      kable_styling("striped", full_width = T)
+ # output$mtcars_kable <- function() {
+ #   pred_var %>%
+ #     knitr::kable("html") %>%
+  #    kable_styling("striped", full_width = T) }
     #__________________________________________________________________________________________
-
+    # Create Revisions Log table using DT
+    output$mtcars_kable <- DT::renderDataTable({
+      datatable(pred_var, escape = FALSE, options = list(dom = 't', paging = FALSE, searching = FALSE))
+    })
     #_________________________________________________________________________________________
-  }
+ 
   
   ## Repeat of question on main body
   output$selected_question <- renderText({
