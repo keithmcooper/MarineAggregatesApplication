@@ -1,4 +1,4 @@
-#### Instructions for reploying the app ####
+#### Instructions for redeployment of the R shiny Marine Aggregates Application ####
 
 This app (https://rconnect.cefas.co.uk/wgext_dash/) is maintained by the Centre for Environment, Fisheries ad Aquaculture Science (Cefas) on behalf of the ICES Working Group on the Effects of Extraction of Marine Sediments on the Marine Ecosystem (WGEXT).
 
