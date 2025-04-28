@@ -312,6 +312,7 @@ publications = dbGetQuery(pool,
                               p.year,
                               p.country_countryname,
                               p.pub_type,
+                              p.authors,
                               pt.tag_name
                               
                           FROM
@@ -439,11 +440,22 @@ ui <- dashboardPage(
       
       menuItem("Publications", tabName = "publications", icon = icon("binoculars")),
       # icon options: https://fontawesome.com/v4/icons/
+
       conditionalPanel(
         "input.tabs == 'publications'",
         #____________________________________________
-        
-        selectInput(inputId="subjectInput", multiple = T,h4("Select keywords",style="color:white"),choices = c("",as.character(sort(unique(publications$tag_name)))))
+        ## Keywords
+        selectInput(inputId="subjectInput", multiple = T,label = h4("Select keywords",style="color:white"),choices = c("",as.character(sort(unique(publications$tag_name))))),
+        ## Authors
+       selectizeInput(inputId="authorInput", multiple = T,label = h4("Select Author(s)",style="color:white"),choices = c("",as.character(sort(unique(publications$authors)))),
+                      options = list(
+                         persist = TRUE,
+                         closeAfterSelect = FALSE,
+                         openOnFocus = TRUE,
+                         selectOnTab = TRUE,
+                         create = FALSE,
+                        plugins = list('remove_button')
+                      ))
         
         #____________________________________________
       ),
@@ -1029,10 +1041,13 @@ tabItem( tabName = "blog",
 
 #_______________________________________________________________________________
 
-server <- function(input, output) {
-  set.seed(122)
-  histdata <- rnorm(500)
+server <- function(input, output, session) {
+  #set.seed(122)
+  #histdata <- rnorm(500)
+#_______________________________________________________________________________
   
+
+#_______________________________________________________________________________
   output$plot1 <- renderPlot({
     data <- histdata[seq_len(input$slider)]
     hist(data)
@@ -1572,12 +1587,14 @@ server <- function(input, output) {
   #__________________________________________________________________________________________
   
   publications_sel <- reactive({
-    
+    View(publications)
     if(is.null(input$subjectInput)|| input$subjectInput==""){
-    publication3 <- unique(publications[,1:6])
+      publication2.5 <- subset( publications,authors %in% input$authorInput)
+    publication3 <- unique(publication2.5[,1:6])
   }else{
     publication2 <- subset( publications,tag_name %in% input$subjectInput)
-    publication3 <- unique(publication2[,1:6])
+    publication2.5 <- subset( publication2,authors %in% input$authorInput)
+    publication3 <- unique(publication2.5[,1:6])
   }
     
     
@@ -1732,6 +1749,9 @@ server <- function(input, output) {
   output$selected_question <- renderText({
     paste( input$questionInput)#"You have chosen:",
   })
+  
+
+  
 }
 
 shinyApp(ui, server)
