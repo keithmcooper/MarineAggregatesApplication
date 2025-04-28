@@ -1573,12 +1573,16 @@ server <- function(input, output) {
   
   publications_sel <- reactive({
     
-    
-    #management2 <- subset( management,country_countryname %in% 'United Kingdom')
-    #publications2 <- subset( publication,country_countryname %in% input$country2Input)
+    if(is.null(input$subjectInput)|| input$subjectInput==""){
+    publication3 <- unique(publications[,1:6])
+  }else{
     publication2 <- subset( publications,tag_name %in% input$subjectInput)
-    
     publication3 <- unique(publication2[,1:6])
+  }
+    
+    
+    
+    
     return( publication3)
   })
   
