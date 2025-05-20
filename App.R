@@ -1587,14 +1587,15 @@ server <- function(input, output, session) {
   #__________________________________________________________________________________________
   
   publications_sel <- reactive({
-    View(publications)
+    #View(publications)
     if(is.null(input$subjectInput)|| input$subjectInput==""){
-      publication2.5 <- subset( publications,authors %in% input$authorInput)
-    publication3 <- unique(publication2.5[,1:6])
+      #publication2.5 <- subset( publications,authors %in% input$authorInput)
+    publication3 <- unique(publications[,1:6])
   }else{
     publication2 <- subset( publications,tag_name %in% input$subjectInput)
-    publication2.5 <- subset( publication2,authors %in% input$authorInput)
-    publication3 <- unique(publication2.5[,1:6])
+    #publication2.5 <- subset( publication2,authors %in% input$authorInput)
+    publication3 <- unique(publication2[,1:6])
+    #browser()
   }
     
     
