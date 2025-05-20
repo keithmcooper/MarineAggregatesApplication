@@ -519,7 +519,7 @@ ui <- dashboardPage(
     
     modalDialog(
       
-      title = div(h4("Welcome to the ",tags$b("Marine Aggregates Application (MAAP)")," from ICES WGEXT"),style = "text-align: center;"),
+      title = div(h4("Welcome to the ",tags$b("North Atlantic Marine Aggregates Application (NAMAAP)")," from ICES WGEXT"),style = "text-align: center;"),
       h4("What is ICES WGEXT?"),
       p("The Working Group on the Effects of Extraction of Marine Sediments on the Marine Ecosystem (",tags$a(href="https://www.ices.dk/community/groups/pages/wgext.aspx","WGEXT"),"),
         under the International Council for the Exploration of the Sea (",tags$a(href="https://www.ices.dk/Pages/default.aspx","ICES"),"), plays a crucial role in ensuring the sustainable management of marine sand and gravel extraction. 
