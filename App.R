@@ -386,7 +386,7 @@ ui <- dashboardPage(
   #__________________________________________________________________________________________
   #### HEADER ####  
   #dashboardHeader(title=tags$b("WGEXT Dredging Stats Dashboard "),titleWidth = 400),#title = "OneBenthic dashboard"
-  dashboardHeader(title=tags$b("Marine Aggregates Application (MAAP)"),titleWidth = 400),#title = "OneBenthic dashboard"
+  dashboardHeader(title=tags$b("North Atlantic Marine Aggregates Application (NAMAAP)"),titleWidth = 600),#title = "OneBenthic dashboard"
   #__________________________________________________________________________________________
   #### SIDEBAR ####
   dashboardSidebar(
@@ -423,7 +423,7 @@ ui <- dashboardPage(
         
         selectInput(inputId="variableInput", multiple = T,h4("Select country",style="color:white"),choices = c("",as.character(sort(unique(data$country_countryname))))),
         #################
-        selectInput(inputId="yearInput", multiple = T,h4("Select year",style="color:white"),choices = c(2023:1993)),#,selected =2020
+        selectInput(inputId="yearInput", multiple = T,h4("Select year",style="color:white"),choices = c(2024:1993)),#,selected =2020
         #selectInput(inputId="fillInput", multiple = F,h4("Select fill",style="color:white"),choices = c("aggcategory_type","conventionarea_areaname"),selected ="aggcategory_type"),
         br(),#br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
         tags$style(
